@@ -1,52 +1,70 @@
-# Embassy for Two
+# Embassy for Two — The Night Cable (v2)
 
-A small evening game for Liam and Addison: follow five clues to a mystery city, place a shared map pin, then plan an imaginary afternoon and predict each other’s choices.
+A cooperative Cold War diplomatic story for Liam and Addison. One person clicks and types while both discuss every decision over a shared screen. No secret answers or hand-offs are needed.
 
-## Play locally
+## Play
 
-Open `index.html` in a browser. An internet connection loads Leaflet, the map tiles, and optional Google Fonts. No build, account, API key, Python backend, or package installation is needed.
-
-For a local web preview, run this in the project folder:
+Open `index.html` in a browser, or serve this folder:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then open http://127.0.0.1:8000. Python only serves files here; all game logic runs in the browser.
+Visit http://127.0.0.1:8000. The core story runs entirely in the browser, including when opened as a file. Online maps and optional Google Fonts need internet. If the map cannot load, skip navigation and play the full chapter.
 
-## What this iteration does
+## This chapter
 
-- Two curated city missions: an embassy posting in Berlin and a consular posting in Frankfurt am Main. Mission menus hide the answers.
-- Five progressively revealing clues, a map without place labels, coordinate entry, and a single shared pin.
-- Distance to the city centre, an accuracy score, and an early-solve bonus. Reveal unused clues after scoring without changing the score.
-- A sourced debrief and optional conversation prompt.
-- Two turn-taking partner choices and predictions, followed by a joint reveal.
-- A browser-local passport with optional notes and a JSON download. A stamp is earned by finishing, regardless of score.
+Allow roughly 20–30 minutes for discussion, or move quickly for a prototype test:
 
-One person drives during a call or screen-share. This is **not synchronized multiplayer**: there are no rooms, shared server state, or remote controls. Partner answers require looking away / pausing screen-share and handing control over; both players can also make their selections verbally to the person driving. They are hidden in the interface after each turn, not encrypted. Real private simultaneous answers across two devices need a future multiplayer service.
+1. Find the city with a short map warm-up (skippable).
+2. Read the opening brief and three source documents.
+3. Handle a diplomatic reception with three approaches.
+4. Pursue two of four investigative leads. Earlier choices change your access.
+5. Distinguish documented facts, plausible reports, and unverified claims.
+6. Draft a short cable and select an attribution and policy recommendation.
+7. Read the president’s response and handle a late-night development.
+8. See one of four endings and discuss the evening at the residence.
 
-Passport entries live only in localStorage on that browser and site address. Clearing browser data removes them. Download is a backup/export; importing is not implemented yet. Static source code contains the answers. Don’t inspect it if you want the mystery!
+Four visible meters track presidential confidence, host-country trust, allied confidence, and escalation. Choices change meters, documents, reactions and the ending. The decision log explains actual changes. The debrief discloses ending thresholds for feedback and tuning; these are game rules, not a realistic foreign-policy model.
+
+The setting is historical; the crisis, researchers, officials, dialogue and president are fictional. Primary historical references are available in the end-of-chapter debrief. The China campaign is not implemented, to preserve its surprise.
+
+## AI status
+
+**There is no AI API or backend in this version.** The advisers and president use deterministic branching rules. Review evaluates evidence classifications, the explicit attribution choice, and the selected policy. The prose is saved for discussion but is not semantically evaluated or graded. The interface states this at the briefing form and response.
+
+A future AI version needs a server-side endpoint to keep its API key secret. Never put an API key in these static files. GitHub Pages can still host the front end while a separate service handles AI requests.
+
+## Saving and privacy
+
+Progress, briefing drafts and residence notes auto-save to `localStorage` in this browser and site address. Reload to resume. Clearing browser data removes them. A failed save shows a visible message, and the story remains playable in memory.
+
+The final screens can export the full chapter as JSON, including your writing, choices and notes. Import is not implemented. **New posting** replaces only this campaign’s save after an in-app confirmation. It does not delete original-game postcards. There is no analytics, account, sync, or server-side storage; external fonts and map providers receive normal asset requests.
+
+## Original prototype
+
+`classic.html` preserves the original city-map / off-duty prediction game for comparison. It still uses `app.js`, `missions.js`, `style.css`, and its original passport storage key. v2 saves separately.
 
 ## Publish on GitHub Pages
 
-1. Create an empty GitHub repository (do not add a README there).
-2. Commit this folder and push it to the repository’s default branch, usually `main`.
-3. In the GitHub repository, open **Settings → Pages**. Choose **Deploy from a branch**, select your default branch and **/ (root)**, and save.
-4. GitHub supplies a URL such as `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/` when the deployment finishes.
+Push this folder to a GitHub repository. In **Settings → Pages**, choose **Deploy from a branch**, your default branch (usually `main`), and **/ (root)**. No build, packages, API keys, or backend are required. Relative links support GitHub project URLs, and `.nojekyll` keeps it static.
 
-No workflow or build configuration is required. All asset links are relative so project URLs work. The `.nojekyll` file keeps the deployment static. This folder is a local Git repository; a GitHub remote and public deployment are not created by these files.
+A GitHub remote and deployment must be configured separately. Local Git commits do not publish the game. Do not put personal briefing exports or credentials into the repository.
 
-GitHub Pages sites are generally public. Source files and clue answers are public when uploaded to a public repository. Personal postcard notes remain in the player’s browser; they are not uploaded to the repository. Maps/fonts contact their providers; this prototype has no analytics.
+## Files
 
-## Edit the game
+- `index.html`: campaign shell.
+- `campaign.css`: campaign presentation, using the original design variables in `style.css`.
+- `campaign-data.js`: authored evidence, choices, dialogue, historical references.
+- `campaign-engine.js`: state, consequences, assessment, and endings; independent of the DOM.
+- `campaign.js`: screens, navigation, map, autosave, forms, and exports.
+- `tests/campaign.test.cjs`: meaningful branch and state checks.
 
-- `index.html`: page structure and copy.
-- `style.css`: colours, layout, and responsive styling.
-- `missions.js`: city coordinates, five clues, sources, and off-duty prompts. Coordinates refer to city centres, not diplomatic buildings. Add missions using the same object shape and update the mission-count text in `index.html`.
-- `app.js`: map, scoring, turn-taking, and passport storage.
+Run checks with Node.js (no package installation):
 
-No content is generated live. Keep dated statistics labelled with their year and verify new clues against primary sources. The name is playful; this game is not affiliated with any government.
+```sh
+node --test tests/campaign.test.cjs
+node --check campaign.js
+```
 
-## Next iterations
-
-Try the two sample missions on a call, then decide on clue difficulty, world coverage, and whether you want a daily dispatch. Add synchronized rooms only when the basic game feels fun; GitHub Pages can still host the front end if a separate service stores room state.
+Tests exercise access differences, the investigation budget, successful and escalatory routes, duplicate-review protection, and all 648 combinations of major choices with supported/unsupported assessments. Browser testing uses `?playtest=1` for a separate save, so the regular player’s chapter stays untouched.

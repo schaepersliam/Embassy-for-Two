@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#243e36">
+  <title>Embassy for Two · Liam & Addison</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="missions.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="masthead"><a href="./" class="brand"><span class="seal" aria-hidden="true">✳</span> EMBASSY <i>for</i> TWO</a><button id="passport-toggle" class="quiet" aria-expanded="false" aria-controls="passport">Our passport <span id="stamp-count">0</span></button></header>
+  <main>
+    <section class="intro"><p class="eyebrow">THE LIAM & ADDISON FOREIGN SERVICE</p><h1>A little closer.<br><em>Somewhere new.</em></h1><p>One mystery city. Two curious people.<br>A small adventure for your next evening call.</p><div class="intro-meta"><span>◷ 10–15 minutes</span><span>♡ On the same team</span><span>No timer, ever</span></div></section>
+    <section id="passport" class="panel passport" hidden><p class="eyebrow">PLACES WE'VE BEEN, FROM AFAR</p><h2>Our passport</h2><div id="passport-list"></div><p class="small">Saved in this browser only. Use Download to keep a copy of your postcards.</p><button id="download" class="secondary">Download passport</button></section>
+    <div class="section-heading"><p class="eyebrow">TONIGHT'S DISPATCH</p><label class="small">Assignment <select id="mission-select" aria-label="Choose assignment"></select></label></div>
+    <p class="play-note">FIRST EDITION · 2 handpicked missions. One person drives while you talk or screen-share. Partner answers use a turn-taking screen; devices don’t sync.</p>
+    <div id="game-grid" class="game-grid">
+      <section class="panel dossier" aria-labelledby="dossier-title"><div class="dossier-top"><span class="eyebrow">CONFIDENTIAL / JUST US TWO</span><span id="file-number" class="file-number"></span></div><h2 id="dossier-title">Your posting is a mystery.</h2><p class="muted">The destination got lost in transit. Open the clues, talk it through, and drop a pin on the <strong>city centre</strong>.</p><div id="clues"></div><button id="next-clue" class="secondary full">Open next clue</button><p id="clue-count" class="small centered"></p></section>
+      <section class="panel map-panel" aria-labelledby="map-title"><div class="map-heading"><div><p class="eyebrow">WHERE IN THE WORLD?</p><h2 id="map-title">Find your posting.</h2></div><span class="map-symbol" aria-hidden="true">↗</span></div><div id="map" aria-label="Interactive world map. Click to place your guess."></div><p id="map-status" class="small" role="status">Tap the map to place a pin. Zoom in to find the city.</p><details id="coordinate-details"><summary>Place a pin using coordinates</summary><form id="coordinate-form"><label>Latitude <input id="latitude" type="number" min="-85" max="85" step="any" required placeholder="51.5"></label><label>Longitude <input id="longitude" type="number" min="-180" max="180" step="any" required placeholder="-0.1"></label><button class="secondary" type="submit">Place pin</button></form></details><button id="submit-guess" class="primary full" disabled>Agree & lock our pin <span>→</span></button><p class="small centered">One shared guess · Reveal more clues whenever you like</p></section>
+    </div>
+    <section id="result" class="panel result" hidden aria-live="polite"></section>
+    <section id="off-duty" class="panel off-duty" hidden><p class="eyebrow">LAPTOPS CLOSED. YOU'RE OFF DUTY.</p><h2>A free afternoon, together.</h2><p id="off-duty-location"></p><div id="partner-stage"></div></section>
+    <p id="save-status" class="small" role="status"></p>
+    <footer>Made for Liam & Addison <span>Across the miles, until June 2028 ♡</span></footer>
+  </main>
+</body>
+</html>
