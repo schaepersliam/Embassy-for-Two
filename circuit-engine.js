@@ -12,8 +12,10 @@ function generate(seed,data,history=[]){
  let pool=ids.filter(id=>id!==host&&!recent.includes(id));
  if(pool.length<2)pool=ids.filter(id=>id!==host);
  const first=shuffle(pool,random)[0];
- const eligible=pool.filter(id=>id!==first&&data.countries.find(c=>c.id===id).markets);
- const second=shuffle(eligible.length?eligible:ids.filter(id=>id!==host&&id!==first&&data.countries.find(c=>c.id===id).markets),random)[0];
+ const modes=['markets','export-goods','import-goods'].filter(m=>m!==history.at(-1)?.tradeMode);
+ const tradeMode=shuffle(modes,random)[0];
+ const eligible=pool.filter(id=>id!==first&&(tradeMode!=='markets'||data.countries.find(c=>c.id===id).markets));
+ const second=shuffle(eligible.length?eligible:ids.filter(id=>id!==host&&id!==first&&(tradeMode!=='markets'||data.countries.find(c=>c.id===id).markets)),random)[0];
  const trade=[first,second];
  const optionIds=target=>shuffle([target,...shuffle(ids.filter(id=>id!==target),random).slice(0,5)],random);
  const lastRules=history.slice(-1).flatMap(h=>h.ruleIds||[]);
@@ -26,9 +28,9 @@ function generate(seed,data,history=[]){
   return makeRound('connections',{ruleId:rule.id,answers:yes,options:shuffle([...yes,...no],random)});
  });
  const hidden=makeHidden(seed,data,history,random);
- return{version:3,features:2,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1]),political[1]],postcard:'',recipeSaved:false,completedAt:null};
+ return{version:3,features:3,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1],tradeMode),political[1]],postcard:'',recipeSaved:false,completedAt:null};
 }
-function makePickFive(target){return makeRound('partner',{target,options:[],picks:[],hits:[]});}
+function makePickFive(target,mode='markets'){return makeRound('partner',{target,mode,options:[],picks:[],hits:[]});}
 function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
  const recent=history.slice(-1).flatMap(h=>h.ruleIds||[]);
  const themes=data.themes.filter(t=>!recent.includes(t.id));
@@ -38,10 +40,10 @@ function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
  return makeRound('hidden',{themeId:theme.id,linkClues:0,answers,options:shuffle([...answers,...shuffle(no,random).slice(0,3).map(c=>c.id)],random)});
 }
 function upgrade(s,data){
- if(s.features===2)return s;
+ if(s.features>=2){s.rounds[3].mode=s.rounds[3].mode||'markets';s.features=3;return s;}
  if(!s.rounds[2].solved)s.rounds[2]=makeHidden(s.seed,data);
  if(!s.rounds[3].solved){const old=s.rounds[3].target;const target=data.countries.find(c=>c.id===old&&c.markets)||data.countries.find(c=>c.markets&&c.id!==s.hostId&&c.id!==s.rounds[1].target);s.rounds[3]=makePickFive(target.id);}
- s.features=2;s.recipeSaved=s.recipeSaved||false;return s;
+ s.features=3;s.recipeSaved=s.recipeSaved||false;return s;
 }
 function current(s){return s.rounds[s.index];}
 function distance(a,b){const r=n=>n*Math.PI/180;const h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 6371*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));}
@@ -53,10 +55,12 @@ function settle(s,round,points,assisted=false){
  return true;
 }
 function score(round){return Math.max(20,100-15*Math.max(0,round.tries-(round.favours.president?1:0)));}
+function mapScore(km,clues=1){return km<=30?100:Math.max(5,Math.round(100*Math.exp(-(km-30)/2200))-5*(clues-1));}
+function resetSelection(s){const r=current(s);if(s.phase!=='play'||!['hidden','connections'].includes(r.kind))return false;r.selected=[];r.message='All seats cleared. Your clues and confirmed countries stay available.';return true;}
 function lockMap(s,data){
  const r=current(s);if(s.phase!=='play'||r.kind!=='map'||!r.pin||!Number.isFinite(r.pin.lat)||!Number.isFinite(r.pin.lng)||Math.abs(r.pin.lat)>85||Math.abs(r.pin.lng)>180)return false;
  r.km=distance(r.pin,data.countries.find(c=>c.id===r.target));
- return settle(s,r,Math.max(0,Math.round(100*Math.exp(-r.km/500))-5*(r.clues-1)));
+ return settle(s,r,mapScore(r.km,r.clues));
 }
 function answer(s,choice){
  const r=current(s);if(s.phase!=='play'||r.kind!=='exports'||!r.options.includes(choice)||r.eliminated.includes(choice)||r.wrong.includes(choice))return false;
@@ -64,7 +68,7 @@ function answer(s,choice){
  r.tries++;r.wrong.push(choice);r.message='That delegation doesn’t match. Talk it through and try another.';return true;
 }
 function select(s,id){
- const r=current(s);if(s.phase!=='play'||!['connections','hidden'].includes(r.kind)||!r.options.includes(id)||r.eliminated.includes(id)||r.confirmed.includes(id))return false;
+ const r=current(s);if(s.phase!=='play'||!['connections','hidden'].includes(r.kind)||!r.options.includes(id)||r.eliminated.includes(id))return false;
  if(r.selected.includes(id))r.selected=r.selected.filter(x=>x!==id);
  else if(r.selected.length<3)r.selected.push(id);
  else{r.message='Three seats at this table. Unselect a country to swap it.';return false;}
@@ -83,16 +87,16 @@ function checkSet(s){
 }
 function addPick(s,text,data){
  const r=current(s);if(s.phase!=='play'||r.kind!=='partner'||!Array.isArray(r.picks))return false;
- const name=data.normalizeCountry(text);
- if(!name){r.message='Choose a recognised country from the search suggestions.';return false;}
- if(name===data.countries.find(c=>c.id===r.target).name){r.message='An export destination must be another country.';return false;}
- if(r.picks.includes(name)){r.message='That country is already on your list.';return false;}
+ const goods=r.mode&&r.mode!=='markets',name=goods?data.normalizeGood(text):data.normalizeCountry(text);
+ if(!name){r.message=goods?'Choose a product from the suggestions, or enter its six-digit HS code.':'Choose a recognised country from the search suggestions.';return false;}
+ if(!goods&&name===data.countries.find(c=>c.id===r.target).name){r.message='An export destination must be another country.';return false;}
+ if(r.picks.includes(name)){r.message='That answer is already on your list.';return false;}
  if(r.picks.length>=5){r.message='Your five picks are ready. Remove one to change it.';return false;}
  r.picks.push(name);r.message=r.picks.length===5?'Five picks ready. Lock them to reveal the true ranking.':'';return true;
 }
 function lockPicks(s,data){
  const r=current(s);if(s.phase!=='play'||r.kind!=='partner'||!r.picks||r.picks.length!==5)return false;
- const names=data.countries.find(c=>c.id===r.target).markets.map(m=>m[0]);
+ const names=data.pickFiveRows(r).map(m=>m[0]);
  r.hits=r.picks.filter(name=>names.includes(name));return settle(s,r,r.hits.length*20);
 }
 function useFavour(s,kind,data){
@@ -105,7 +109,7 @@ function useFavour(s,kind,data){
  if(kind==='allies'){
   if(r.kind==='partner'){
    if(r.picks.length>=5)return false;
-   const name=data.countries.find(c=>c.id===r.target).markets.map(m=>m[0]).find(name=>!r.picks.includes(name));
+   const name=data.pickFiveRows(r).map(m=>m[0]).find(name=>!r.picks.includes(name));
    r.picks.push(name);r.confirmed.push(name);
   }else if(['connections','hidden'].includes(r.kind)){
    const id=r.answers.find(id=>!r.confirmed.includes(id));r.confirmed.push(id);
@@ -116,16 +120,16 @@ function useFavour(s,kind,data){
   }
  }
  r.favours[kind]=true;s.favours[kind]-=cost;
- r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='partner'?'Your ally suggested one of the true top-five markets.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
+ r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='partner'?'Your ally suggested one of the true top five.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
  return true;
 }
 function reveal(s){const r=current(s);if(s.phase!=='play'||r.kind==='map')return false;return settle(s,r,0,true);}
 function advance(s){if(s.phase!=='result')return false;if(s.index===s.rounds.length-1){s.phase='summit';s.completedAt=s.completedAt||new Date().toISOString();}else{s.index++;s.phase='play';}return true;}
-function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
+function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,activityId:s.activityId??null,tradeMode:s.rounds[3].mode||'markets',roundScores:s.rounds.map(r=>r.points),recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
 function validate(s,data){
  if(!s||s.version!==3||!Number.isInteger(s.seed)||!data.countries.some(c=>c.id===s.hostId)||!['play','result','summit'].includes(s.phase)||!Number.isInteger(s.index)||s.index<0||s.index>4||!Array.isArray(s.rounds)||s.rounds.length!==5||!s.favours)return false;
  if(!['host','allies','president'].every(k=>Number.isFinite(s.favours[k])&&s.favours[k]>=0&&s.favours[k]<=100))return false;
  return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
 }
-const api={generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
+const api={mapScore,resetSelection,generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

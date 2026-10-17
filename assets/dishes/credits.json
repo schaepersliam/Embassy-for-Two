@@ -1,0 +1,110 @@
+{
+  "AUT": {
+    "src": "assets/dishes/AUT.jpg",
+    "alt": "Kaiserschmarrn",
+    "title": "Kaiserschmarrn at Weihenstephan 2005-08-03.jpg",
+    "artist": "Kaleissin",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "source": "https://commons.wikimedia.org/wiki/File:Kaiserschmarrn_at_Weihenstephan_2005-08-03.jpg"
+  },
+  "DEU": {
+    "src": "assets/dishes/DEU.jpg",
+    "alt": "Currywurst",
+    "title": "Currywurst-2024.jpg",
+    "artist": "Richard Mischau, Britta Mischau",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Currywurst-2024.jpg"
+  },
+  "CHE": {
+    "src": "assets/dishes/CHE.jpg",
+    "alt": "Rösti Anschnitt.jpg",
+    "title": "Rösti Anschnitt.jpg",
+    "artist": "Poupou l'quourouce",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:R%C3%B6sti_Anschnitt.jpg"
+  },
+  "NOR": {
+    "src": "assets/dishes/NOR.jpg",
+    "alt": "Flickr - cyclonebill - Fiskesuppe.jpg",
+    "title": "Flickr - cyclonebill - Fiskesuppe.jpg",
+    "artist": "cyclonebill",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Flickr_-_cyclonebill_-_Fiskesuppe.jpg"
+  },
+  "IRL": {
+    "src": "assets/dishes/IRL.jpg",
+    "alt": "Soda bread",
+    "title": "Soda bread.jpg",
+    "artist": "Heather \"Moria\"",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Soda_bread.jpg"
+  },
+  "PRT": {
+    "src": "assets/dishes/PRT.jpg",
+    "alt": "Pastel de nata septembre 2015.jpg",
+    "title": "Pastel de nata septembre 2015.jpg",
+    "artist": "Photo Claude TRUONG-NGOC",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Pastel_de_nata_septembre_2015.jpg"
+  },
+  "CHL": {
+    "src": "assets/dishes/CHL.jpg",
+    "alt": "Empanada pino",
+    "title": "Empanada de pino.jpg",
+    "artist": "J B from Champaign, IL, USA",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Empanada_de_pino.jpg"
+  },
+  "PER": {
+    "src": "assets/dishes/PER.jpg",
+    "alt": "Lomo saltado",
+    "title": "Lomo-saltado-perudelights.jpg",
+    "artist": "WikiHes",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lomo-saltado-perudelights.jpg"
+  },
+  "AUS": {
+    "src": "assets/dishes/AUS.jpg",
+    "alt": "Lamington",
+    "title": "NZ Lamington.jpg",
+    "artist": "Spacekadet at English Wikipedia",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "source": "https://commons.wikimedia.org/wiki/File:NZ_Lamington.jpg"
+  },
+  "NZL": {
+    "src": "assets/dishes/NZL.jpg",
+    "alt": "Pavlova with raspberries.jpg",
+    "title": "Pavlova with raspberries.jpg",
+    "artist": "Siobhan Leachman",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:Pavlova_with_raspberries.jpg"
+  },
+  "KEN": {
+    "src": "assets/dishes/KEN.jpg",
+    "alt": "Sukuma wiki",
+    "title": "Sukuma wiki kwa wali.jpg",
+    "artist": "Denniz Bitz",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sukuma_wiki_kwa_wali.jpg"
+  },
+  "GHA": {
+    "src": "assets/dishes/GHA.jpg",
+    "alt": "Ghanaian Red-Red with Fish.jpg",
+    "title": "Ghanaian Red-Red with Fish.jpg",
+    "artist": "benketaro",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Ghanaian_Red-Red_with_Fish.jpg"
+  }
+}
