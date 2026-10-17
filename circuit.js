@@ -3,17 +3,22 @@ const D=window.CircuitData,E=window.CircuitEngine,$=id=>document.getElementById(
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const query=new URLSearchParams(location.search),storeKey='embassy-circuit-v3'+(query.has('playtest')?'-playtest':'');
 let state,history=[],map=null,mapView=null,pinMarker=null;
+const exportCountry=id=>D.exportCountries.find(c=>c.id===id);
 const country=id=>D.countries.find(c=>c.id===id),rule=id=>D.rules.find(r=>r.id===id),theme=id=>D.themes.find(t=>t.id===id);
-let selectedCity=null,disposeGlobe=null;
+let selectedCity=null,disposeGlobe=null,passportTab='places',exportExposure={targets:[],options:[],lastSeed:null};
 const list=items=>new Intl.ListFormat('en-US',{style:'long',type:'conjunction'}).format(items);
 const newSeed=()=>crypto.getRandomValues(new Uint32Array(1))[0];
-try{const saved=JSON.parse(localStorage.getItem(storeKey));if(saved&&saved.version===3){history=Array.isArray(saved.history)?saved.history.filter(h=>h&&Number.isInteger(h.seed)&&country(h.hostId)):[];if(E.validate(saved.state,D))state=saved.state;}}catch{}
-if(!state)state=E.generate(newSeed(),D,history);
+try{const saved=JSON.parse(localStorage.getItem(storeKey));if(saved&&saved.version===3){history=Array.isArray(saved.history)?saved.history.filter(h=>h&&Number.isInteger(h.seed)&&country(h.hostId)):[];if(saved.passportTab==='recipes')passportTab='recipes';if(saved.exportExposure&&Array.isArray(saved.exportExposure.targets)&&Array.isArray(saved.exportExposure.options))exportExposure=saved.exportExposure;if(E.validate(saved.state,D))state=saved.state;}}catch{}
+if(!exportExposure.targets.length&&history.length)exportExposure.targets=history.map(h=>h.exportTarget||h.tradeIds?.[0]).filter(Boolean);
+if(!state)state=E.generate(newSeed(),D,history,exportExposure);
 else state=E.upgrade(state,D);
+function recordExportExposure(){if(exportExposure.lastSeed!==state.seed){exportExposure.targets.push(state.rounds[1].target);exportExposure.options=[...exportExposure.options,...state.rounds[1].options].slice(-12);exportExposure.lastSeed=state.seed;}}
+recordExportExposure();
 const resourceNames={host:'Host-country trust',allies:'Allied confidence',president:'Presidential confidence'};
-const taskNames=['Find the posting','Read the exports','Uncover the link','Trade five','Deliver the pouch'];
-const taskLabel=(i,r)=>i===4&&r.kind==='connections'?'Build the coalition (earlier version)':taskNames[i];
-function save(){try{localStorage.setItem(storeKey,JSON.stringify({version:3,state,history}));$('save-status').textContent='✓ Saved in this browser';}catch{$('save-status').textContent='Storage unavailable · keep this tab open';}}
+const taskNames=['Find the posting','Read the exports','Uncover the link','Trade five','City trivia'];
+const finalLabel=kind=>kind==='quiz'?'City trivia':kind==='courier'?'Deliver the pouch (earlier version)':'Build the coalition (earlier version)';
+const taskLabel=(i,r)=>i===4?finalLabel(r.kind):taskNames[i];
+function save(){try{localStorage.setItem(storeKey,JSON.stringify({version:3,state,history,passportTab,exportExposure}));$('save-status').textContent='✓ Saved in this browser';}catch{$('save-status').textContent='Storage unavailable · keep this tab open';}}
 function archive(){if(state.phase!=='summit')return;const entry=E.historyEntry(state);const index=history.findIndex(h=>h.seed===state.seed);if(index<0)history.push(entry);else history[index]=entry;save();}
 function btn(label,action,secondary=false,disabled=false){return `<button class="${secondary?'secondary':'primary'}" data-action="${action}" ${disabled?'disabled':''}>${label}</button>`;}
 function link(title,url){return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(title)} ↗</a>`;}
@@ -40,7 +45,7 @@ function render(){
  renderChrome();
  if(state.phase==='summit')renderSummit();else if(state.phase==='result')renderResult();else{
   const r=E.current(state);
-  if(r.kind==='map')renderMap();else if(r.kind==='courier')renderCourier();else if(['connections','hidden'].includes(r.kind))renderConnections();else if(r.kind==='partner')renderPickFive();else renderTrade();
+  if(r.kind==='map')renderMap();else if(r.kind==='quiz')renderQuiz();else if(r.kind==='courier')renderCourier();else if(['connections','hidden'].includes(r.kind))renderConnections();else if(r.kind==='partner')renderPickFive();else renderTrade();
  }
  bind();
 }
@@ -59,7 +64,7 @@ function treemap(products){
 function optionCards(r){
  return `<div class="country-options">${r.options.map(id=>{
   const selected=r.selected.includes(id),wrong=r.wrong.includes(id),eliminated=r.eliminated.includes(id),confirmed=r.confirmed.includes(id);
-  const name=r.kind==='partner'?id:country(id).name;
+  const name=r.kind==='partner'?id:r.kind==='exports'?exportCountry(id).name:country(id).name;
   return `<button class="country-card ${selected?'selected':''} ${confirmed?'confirmed':''}" data-option="${esc(id)}" aria-pressed="${selected}" ${wrong||eliminated?'disabled':''}><span>${esc(name)}</span><i>${wrong?'×':eliminated?'—':confirmed?'✓':selected?'✓':'+'}</i>${wrong?'<small>Not this one</small>':eliminated?'<small>Ruled out by your ally</small>':confirmed?'<small>Your ally confirms this seat</small>':''}</button>`;
  }).join('')}</div>`;
 }
@@ -71,20 +76,27 @@ function favourButtons(r){
 function localTip(r){
  if(!r.favours.host||r.kind==='hidden')return'';
  if(r.kind==='courier'){const m=D.courierMissions.find(m=>m.id===r.missionId),last=r.route.at(-1),neighbors=D.courierCountry(last).neighbors.filter(id=>id!==m.blocked).map(id=>D.courierCountry(id).name);return `<div class="local-tip"><p><strong>Local contact:</strong> ${esc(D.courierCountry(last).name)} borders ${esc(list(neighbors))} on this board. You must still make the pickup and meet the crossing budget.</p></div>`;}
- const c=country(r.target);let text;
+ const c=r.kind==='exports'?exportCountry(r.target):country(r.target);let text;
  if(r.kind==='connections')text=rule(r.ruleId).tip;
- else if(r.kind==='exports')text=`Look in ${c.region}. The national currency is the ${c.currency}.`;
+ else if(r.kind==='exports')text=`Look in ${c.region}.${c.currency?' The national currency is the '+c.currency+'.':''}`;
  else text=D.pickFiveMode(r)==='markets'?`The largest destination is in ${D.partnerRegions[c.partner]}. You still need four others.`:`The leading product is “${D.pickFiveRows(r)[0][0]}”. Find the other four.`;
  return `<div class="local-tip">${eyebrow('A WORD FROM YOUR LOCAL CONTACT')}<p>${esc(text)}</p></div>`;
 }
 function renderTrade(){
- const r=E.current(state),c=country(r.target),partner=r.kind==='partner';
+ const r=E.current(state),c=r.kind==='exports'?exportCountry(r.target):country(r.target),partner=r.kind==='partner';
  $('puzzle').innerHTML=eyebrow(`${state.index+1} / ${partner?'THE TRADE ROUTE':'THE UNMARKED SHIPPING MANIFEST'}`)+`<h2>${partner?'Who’s at the other end?':'Who exports this?'}</h2><p class="puzzle-intro">${partner?`In 2023, which country bought the largest share of <strong>${esc(c.name)}’s goods exports</strong>?`:'A delegation sent its export basket, but forgot the country name. Who should we invite?'}</p>`+(partner?`<div class="market-board"><span>FROM</span><strong>${esc(c.name)}</strong><div class="shipping-line">······················ →</div><span>TOP GOODS EXPORT MARKET / 2023</span><strong class="mystery-destination">?</strong><p>The missing destination received <b>${c.partnerShare.toFixed(2)}%</b> of its reported goods exports.</p></div>`:treemap(c.products))+`<p class="chart-note">${partner?'Trade in goods, not services. Destination of exports, not total two-way trade.':'Real 2023 data · Area and percentages show shares within these five leading HS6 products, not all exports.'}</p>`+(!partner?`<details class="product-values"><summary>See export values & product codes</summary>${c.products.map(p=>`<p><span>${esc(p.label)} <small>HS ${p.code}</small></span><b>$${(p.value/1e6).toFixed(2)}bn</b></p>`).join('')}</details>`:'')+localTip(r)+optionCards(r)+`<p id="round-message" class="round-message" role="status">${esc(r.message)}</p><div class="action-row">${btn('Send our answer →','answer')}${btn('Reveal & keep going','reveal',true)}</div><p class="small">Try as long as you like. Each miss costs 15 points. A reveal moves you forward with 0 points.</p>`+favourButtons(r);
 }
 function renderConnections(){
  const r=E.current(state),hidden=r.kind==='hidden',g=hidden?theme(r.themeId):rule(r.ruleId);
  const clues=hidden?`<div class="connection-clues">${r.linkClues?g.clues.slice(0,r.linkClues).map((text,i)=>`<article>${eyebrow('CLUE '+(i+1))}<p>${esc(text)}</p></article>`).join(''):`<div class="sealed-link"><span aria-hidden="true">✳</span><p>The link is sealed.<br><small>Start with your own theory. A wrong trio opens a clue.</small></p></div>`}</div>`:'';
  $('puzzle').innerHTML=eyebrow(`${state.index+1} / ${hidden?'THE SECRET OF THE SEATING PLAN':'THE RECEPTION SEATING PLAN'}`)+`<h2>${hidden?'What brings them together?':esc(g.title)}</h2><p class="puzzle-intro">${hidden?'Six countries. Three seats. Find the trio connected by the hidden theme. It might be a shared export, a piece of history, or stages of a supply chain.':esc(g.prompt)+' Three seats, six delegations.'}</p>`+clues+`<div class="three-seats" aria-label="Three seats">${[0,1,2].map(i=>`<div class="seat ${r.selected[i]?'occupied':''}"><span>${i+1}</span><strong>${r.selected[i]?esc(country(r.selected[i]).name):'Open seat'}</strong></div>`).join('')}</div>`+localTip(r)+optionCards(r)+`<p id="round-message" class="round-message" role="status">${esc(r.message)}</p><div class="action-row">${btn('Confirm our table →','check-set')}${btn('Reset seats','reset-seats',true)}${btn('Reveal & keep going','reveal',true)}</div><p class="small">${hidden?'Find the intended link; other commonalities may exist. Each distinct wrong trio costs 15 points and opens the next clue, up to three clues. Export links use the five-product baskets in our 2023 source.':'Select exactly three. A wrong trio tells you how many fit. Membership snapshot: '+D.membershipDate+'.'}</p>`+favourButtons(r);
+}
+function renderQuiz(){
+ const r=E.current(state),slot=r.questions[r.quizIndex],q=D.quizQuestion(slot.id),response=r.responses[r.quizIndex],c=country(r.hostId);
+ $('puzzle').innerHTML=eyebrow('05 / A LITTLE LOCAL KNOWLEDGE')+`<h2>How well do we know<br>${esc(c.city)}?</h2><div class="quiz-progress" aria-label="Quiz progress">${r.questions.map((_,i)=>`<span class="${i===r.quizIndex?'current':''} ${r.responses[i]?(r.responses[i].correct?'correct':'miss'):''}">${r.responses[i]?(r.responses[i].correct?'✓':'·'):i+1}</span>`).join('')}<small>QUESTION ${r.quizIndex+1} / 5</small></div><h3 class="quiz-question">${esc(q.prompt)}</h3><div class="quiz-answers">${slot.options.map((answer,i)=>`<button class="quiz-answer ${response?(answer===q.answer?'correct':answer===response.choice?'miss':''):''}" data-quiz-answer="${i}" ${response?'disabled':''}><span>${String.fromCharCode(65+i)}</span><strong>${esc(answer)}</strong>${response&&answer===q.answer?'<b>✓</b>':''}</button>`).join('')}</div>${response?`<section class="quiz-feedback" role="status"><strong>${esc(r.message)}</strong><p>${esc(q.explain)}</p>${link('Read the source',q.source)}</section><div class="action-row">${btn(r.quizIndex===4?'See our quiz results →':'Next question →','quiz-next')}</div>`:`<p class="small">Talk it through, then pick one answer together. Each correct answer earns 20 points.</p><div class="action-row">${btn('Skip this question','quiz-skip',true)}</div>`}<p class="small">${r.responses.filter(a=>a.correct).length} correct · ${r.responses.filter(a=>a.correct).length*20} / 100 points so far · No timer.</p>`;
+}
+function quizResult(r){
+ return `<div class="pick-five-score"><strong>${r.responses.filter(a=>a.correct).length}<small> / 5</small></strong><span>city facts figured out together</span></div><div class="quiz-recap">${r.questions.map((slot,i)=>{const q=D.quizQuestion(slot.id),a=r.responses[i];return `<article><span class="quiz-recap-mark">${a?.correct?'✓':'○'}</span><div><h3>${esc(q.prompt)}</h3><p><strong>${esc(q.answer)}</strong>${a&&!a.correct?' · Your answer: '+esc(a.choice||'Skipped'):!a?' · Not answered':''}</p><p>${esc(q.explain)}</p>${link('Source',q.source)}</div></article>`;}).join('')}</div>`;
 }
 function courierMap(r,revealed=false){
  const m=D.courierMissions.find(m=>m.id===r.missionId),path=revealed?(r.assisted?D.courierSolution(m):r.route):r.route;
@@ -113,19 +125,21 @@ function connectionReveal(r){
  return `<section class="connection-explained"><h3>The connection, country by country</h3>${t.id==='refined-fuels'?'<p>Refined petroleum means processed oil products, such as gasoline and diesel. All three export this category in their leading five-product baskets. This does not mean their crude oil is home-grown, or that the exports were all refined domestically.</p>':''}<ul>${matches}</ul><h3>All three clues</h3><ol>${t.clues.map(clue=>`<li>${esc(clue)}</li>`).join('')}</ol></section>`;
 }
 function explanation(r){
+ if(r.kind==='quiz')return{title:'A little closer to '+country(r.hostId).city+'.',text:'Five local questions, one shared score. Here are the facts to take into our next visit.',sources:[]};
  if(r.kind==='courier'){const m=D.courierMissions.find(m=>m.id===r.missionId),path=r.assisted?D.courierSolution(m):r.route;return{title:r.assisted?'One route that works.':'Pouch delivered.',text:path.map(id=>D.courierCountry(id).name).join(' → ')+`. ${path.length-1} border crossings, a pickup in ${D.courierCountry(m.via).name}, and no entry into ${D.courierCountry(m.blocked).name}. Other valid routes can also count.`,sources:[['Land-border geography · Eurostat GISCO',D.courierSource]]};}
  if(r.kind==='hidden'){const t=theme(r.themeId);return{title:t.title,text:t.explain,sources:D.themeSources(t,r.answers)};}
  if(r.kind==='partner'&&r.picks){const c=country(r.target);return{title:'The real top five.',text:'The '+D.pickFiveDescription(r)+' in 2023. Each match earns 20 points; guess order does not matter.',sources:[['2023 export markets · WITS / UN Comtrade',c.tradeSource]]};}
  if(r.kind==='map')return{title:`${country(r.target).city}, ${country(r.target).name}.`,text:`${r.km<=30?"Spot on! ":""}Your pin was ${Math.round(r.km).toLocaleString()} km from the city center. The host venue is ready.`,sources:[['Geography & city · UNdata',country(r.target).geoSource],...D.postingSources(country(r.target))]};
- if(r.kind==='exports'){const c=country(r.target);return{title:`Welcome, ${c.name}.`,text:`${c.products[0].label} was the largest of these five individual export products in 2023, worth US$ ${(c.products[0].value/1e6).toFixed(2)} billion. You’ve identified the delegation.`,sources:[['2023 trade profile · WITS / UN Comtrade',c.tradeSource]]};}
+ if(r.kind==='exports'){const c=exportCountry(r.target);return{title:`Welcome, ${c.name}.`,text:`${c.products[0].label} was the largest of these five individual export products in 2023, worth US$ ${(c.products[0].value/1e6).toFixed(2)} billion. You’ve identified the delegation.`,sources:[['2023 trade profile · WITS / UN Comtrade',c.tradeSource]]};}
  if(r.kind==='partner'){const c=country(r.target);return{title:`The route leads to ${c.partner}.`,text:`${c.partner} received ${c.partnerShare.toFixed(2)}% of ${c.name}’s reported goods exports in 2023, the largest destination share in this source. A new trade connection for your summit.`,sources:[['2023 export markets · WITS / UN Comtrade',c.tradeSource]]};}
  const g=rule(r.ruleId),names=r.answers.map(id=>country(id).name);
  return{title:'A little common ground.',text:`${list(names)} satisfy the table’s rule. ${g.tip}`,sources:g.sources.length?g.sources.map(id=>D.sources[id]):r.options.map(id=>[country(id).name+' · UNdata',country(id).geoSource])};
 }
 function renderResult(){
  const r=E.current(state),info=explanation(r);
- const content=eyebrow(r.assisted?'ASSIGNMENT COMPLETE / A LITTLE HELP IS ALLOWED':'ASSIGNMENT COMPLETE / ONE STEP CLOSER')+`<h2>${esc(info.title)}</h2><p class="puzzle-intro">${esc(info.text)}</p>${r.kind==='courier'?courierMap(r,true):r.kind==='partner'&&r.picks?pickFiveResult(r):r.kind==='hidden'?connectionReveal(r):''}<div class="result-stats"><p><strong>${r.points}<small>/ 100</small></strong><span>points for the team</span></p><p><strong>+${r.reward.amount}</strong><span>${resourceNames[r.reward.resource]}</span></p></div>`+(['connections','hidden'].includes(r.kind)?`<div class="answer-countries">${r.answers.map(id=>`<span>✓ ${esc(country(id).name)}</span>`).join('')}</div>`:'')+`<details class="source-details"><summary>Sources & a little more context</summary>${info.sources.map(([title,url])=>link(title,url)).join('')}${r.kind==='map'?`<p class="small">City-center distance, not an embassy building. Within 30 km earns 100 points, even with clues. Further away: 100 × e^(−(km−30)/2200), rounded, minus 5 per extra clue. Every valid pin earns at least 5 points.</p>`:r.kind==='exports'?'<p class="small">WITS reports individual HS 1988/92 six-digit products, not broad industries. Labels are shortened. This is a five-product basket; re-exports may be included.</p>':r.kind==='connections'?`<p class="small">${esc(rule(r.ruleId).prompt)} Membership data is a curated snapshot, not a live feed.</p>`:''}</details><div class="action-row">${btn(state.index===4?'Open the summit →':'Next assignment →','next')}</div>`;
+ const content=eyebrow(r.assisted?'ASSIGNMENT COMPLETE / A LITTLE HELP IS ALLOWED':'ASSIGNMENT COMPLETE / ONE STEP CLOSER')+`<h2>${esc(info.title)}</h2><p class="puzzle-intro">${esc(info.text)}</p>${r.kind==='quiz'?quizResult(r):r.kind==='courier'?courierMap(r,true):r.kind==='partner'&&r.picks?pickFiveResult(r):r.kind==='hidden'?connectionReveal(r):''}<div class="result-stats"><p><strong>${r.points}<small>/ 100</small></strong><span>points for the team</span></p><p><strong>+${r.reward.amount}</strong><span>${resourceNames[r.reward.resource]}</span></p></div>`+(['connections','hidden'].includes(r.kind)?`<div class="answer-countries">${r.answers.map(id=>`<span>✓ ${esc(country(id).name)}</span>`).join('')}</div>`:'')+`<details class="source-details"><summary>Sources & a little more context</summary>${info.sources.map(([title,url])=>link(title,url)).join('')}${r.kind==='map'?`<p class="small">City-center distance, not an embassy building. Within 30 km earns 100 points, even with clues. Further away: 100 × e^(−(km−30)/2200), rounded, minus 5 per extra clue. Every valid pin earns at least 5 points.</p>`:r.kind==='exports'?'<p class="small">WITS reports individual HS 1988/92 six-digit products, not broad industries. Labels are shortened. This is a five-product basket; re-exports may be included.</p>':r.kind==='connections'?`<p class="small">${esc(rule(r.ruleId).prompt)} Membership data is a curated snapshot, not a live feed.</p>`:''}</details><div class="action-row">${btn(state.index===4?'Open the summit →':'Next assignment →','next')}</div>`;
  $('puzzle').innerHTML=r.kind==='map'?`<div class="map-round"><div>${content}</div><div class="map-board">${eyebrow('GREEN: YOUR PIN / PEACH: THE DESTINATION')}<div id="map" aria-label="Your guess and the destination"></div><p id="map-status" class="small">The posting is found. Time to bring the summit together.</p></div></div>`:content;
+ if(r.kind==='quiz')$('puzzle').querySelector('.source-details')?.remove();
  if(r.kind==='map')initializeMap(true);
 }
 function citySpread(c,record=null){
@@ -139,17 +153,21 @@ function renderSummit(){
  const c=country(state.hostId),points=scoreTotal();
  $('puzzle').innerHTML=citySpread(c)+eyebrow('THE SUMMIT IS OPEN / PHONES DOWN FOR A MOMENT')+`<h2>A table set, together.</h2><p class="puzzle-intro">From an unmarked map to a summit in ${esc(c.city)}. Five assignments, one team.</p><div class="summit-medallion"><span>LIAM & ADDISON</span><strong>${points}<small>/ 500</small></strong><span>${points>=400?'A VERY SMOOTH POSTING':points>=250?'DIPLOMACY WELL PRACTICED':'AN EVENING WELL EXPLORED'}</span></div><details class="recap-details"><summary>See our five assignments</summary><div class="round-recap">${state.rounds.map((r,i)=>`<p><span>${i+1}. ${taskLabel(i,r)}</span><strong>${r.points} <small>/ 100</small></strong></p>`).join('')}</div></details><h3>We’ve clocked off in ${esc(c.city)}. Now what?</h3><p class="small">Three local ideas. Choose the one we’d do together; it goes straight into our passport.</p><div class="local-plan-options">${localPlans(c).map(([title,text],i)=>`<button class="local-plan ${state.activityId===i?'selected':''}" data-postcard="${i}" aria-pressed="${state.activityId===i}"><small>PLAN 0${i+1}</small><strong>${esc(title)}</strong><span>${esc(text)}</span>${state.activityId===i?'<b>✓ Saved to our passport</b>':''}</button>`).join('')}</div><p class="spoken-prompt">Of the places we explored tonight, where would you most want a weekend together?</p><p class="small">Postcard saved automatically in this browser. You’ve visited ${new Set(history.map(h=>h.hostId)).size} of 12 host cities. Each new dispatch reshuffles the circuit.</p><div class="action-row">${btn('Our next dispatch →','new')}${btn('Download this postcard','download',true)}</div>`;
 }
-function openCity(id){selectedCity=id;location.hash='city='+id;renderPassport();$('passport-detail')?.scrollIntoView({behavior:'smooth',block:'start'});}
+function openCity(id){passportTab='places';selectedCity=id;location.hash='city='+id;renderPassport();$('passport-detail')?.scrollIntoView({behavior:'smooth',block:'start'});}
 function renderPassport(){
  if(disposeGlobe){disposeGlobe();disposeGlobe=null;}
  const latest=[...new Map(history.map(h=>[h.hostId,h])).values()];
  $('passport-list').innerHTML=`<div class="passport-atlas"><div><p class="eyebrow">OUR SHARED ATLAS</p><h3>A little more of the world, together.</h3><p class="small">Drag to spin the globe, then click a city pin to revisit it. Arrow keys rotate it too; Home returns to the starting view.</p><canvas id="passport-globe" tabindex="0" aria-label="Spinnable globe of visited cities; use arrow keys to rotate. The city buttons below open the same pages."></canvas><p class="small globe-credit">Satellite composite: ${link('NASA Earth Observatory · Blue Marble (August 2004)','https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73776/world.topo.bathy.200408.3x5400x2700.jpg')} · not live imagery</p></div><div class="passport-city-list"><p class="eyebrow">${latest.length} / 12 CITIES EXPLORED</p>${latest.length?latest.map(h=>`<button class="passport-city" data-city="${h.hostId}"><strong>${esc(country(h.hostId).city)}</strong><span>${h.points} / 500 · View our posting →</span></button>`).join(''):'<p class="small">Finish your first dispatch to put a city on our globe.</p>'}</div></div><div id="passport-detail" ${selectedCity?'':'hidden'}></div>`;
- if(selectedCity){const visits=history.filter(h=>h.hostId===selectedCity),record=visits.at(-1),c=country(selectedCity);if(record){$('passport-detail').innerHTML=`<button class="secondary" id="close-city">← Back to our globe</button><article class="passport-city-page">${citySpread(c,record)}<h3>Our ${esc(c.city)} postings</h3>${visits.slice().reverse().map(h=>`<section class="past-posting"><p class="eyebrow">DISPATCH ${h.seed.toString(36).toUpperCase()}</p><h3>${h.points} / 500 points</h3>${h.roundScores?`<div class="round-recap">${h.roundScores.map((score,i)=>`<p><span>${i===4&&!h.courierId?'Build the coalition (earlier version)':taskNames[i]}</span><b>${score} / 100</b></p>`).join('')}</div>`:'<p class="small">This earlier posting saved the total score.</p>'}<p><strong>Our off-duty plan:</strong> ${esc(h.postcard||'We haven’t chosen a plan yet.')}</p>${Number.isInteger(h.activityId)?link('Explore our chosen plan',localPlans(c)[h.activityId][2]):''}</section>`).join('')}</article>`;$('close-city').onclick=()=>{selectedCity=null;historyReplaceHash();renderPassport();$('passport').scrollIntoView({behavior:'smooth'});};}else selectedCity=null;}
+ if(selectedCity){const visits=history.filter(h=>h.hostId===selectedCity),record=visits.at(-1),c=country(selectedCity);if(record){$('passport-detail').innerHTML=`<button class="secondary" id="close-city">← Back to our globe</button><article class="passport-city-page">${citySpread(c,record)}<h3>Our ${esc(c.city)} postings</h3>${visits.slice().reverse().map(h=>`<section class="past-posting"><p class="eyebrow">DISPATCH ${h.seed.toString(36).toUpperCase()}</p><h3>${h.points} / 500 points</h3>${h.roundScores?`<div class="round-recap">${h.roundScores.map((score,i)=>`<p><span>${i===4?finalLabel(h.finalKind||(h.courierId?'courier':'connections')):taskNames[i]}</span><b>${score} / 100</b></p>`).join('')}</div>`:'<p class="small">This earlier posting saved the total score.</p>'}<p><strong>Our off-duty plan:</strong> ${esc(h.postcard||'We haven’t chosen a plan yet.')}</p>${Number.isInteger(h.activityId)?link('Explore our chosen plan',localPlans(c)[h.activityId][2]):''}</section>`).join('')}</article>`;$('close-city').onclick=()=>{selectedCity=null;historyReplaceHash();renderPassport();$('passport').scrollIntoView({behavior:'smooth'});};}else selectedCity=null;}
  const recipes=[...new Map(history.filter(h=>h.recipeSaved).map(h=>[h.hostId,h])).values()];
- if(recipes.length)$('passport-list').innerHTML+='<section class="saved-recipes"><h3>Our virtual date-night kitchen</h3>'+recipes.map(h=>'<p>'+link(window.CityGuide[h.hostId].dish+' · '+country(h.hostId).city,window.CityGuide[h.hostId].recipe)+'</p>').join('')+'</section>';
+ $('saved-recipe-count').textContent=recipes.length;
+ $('passport-list').hidden=passportTab!=='places';$('passport-recipes').hidden=passportTab!=='recipes';
+ for(const name of ['places','recipes']){const tab=$('passport-'+name+'-tab');tab.setAttribute('aria-selected',String(passportTab===name));tab.tabIndex=passportTab===name?0:-1;}
+ $('passport-recipes').innerHTML=`<p class="eyebrow">OUR VIRTUAL DATE-NIGHT KITCHEN</p><h3>Recipes worth a second date.</h3><p class="small">Saved dishes from our postings, ready for two kitchens and one call.</p>`+(recipes.length?`<div class="recipe-grid">${recipes.map(h=>{const c=country(h.hostId),g=window.CityGuide[h.hostId],p=window.DishPhotos[h.hostId];return `<article class="recipe-card"><img src="${esc(p.src)}" alt="${esc(g.dish)}" width="600" height="400" loading="lazy"><div><p class="eyebrow">${esc(c.city)} / ${esc(c.name)}</p><h3>${esc(g.dish)}</h3><p>${esc(g.dishText)}</p><p class="small">Recipe by ${esc(g.recipeBy)}</p><div class="action-row">${link('Open recipe',g.recipe)}<button class="quiet" data-recipe-city="${c.id}">Revisit our posting →</button></div><p class="recipe-photo-credit">Photo: ${link(p.artist,p.source)} · ${link(p.license,p.licenseUrl)} · cropped to fit</p></div></article>`;}).join('')}</div>`:'<div class="recipes-empty"><h3>Our first cooking date is waiting.</h3><p>At the end of a dispatch, choose “Add to our cooking dates” on the dish card. It will appear here automatically.</p></div>');
+ $('passport-recipes').querySelectorAll('[data-recipe-city]').forEach(b=>b.onclick=()=>{openCity(b.dataset.recipeCity);save();});
  $('passport-list').querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>openCity(b.dataset.city));
  if($('close-city'))$('close-city').onclick=()=>{selectedCity=null;historyReplaceHash();renderPassport();};
- if(!$('passport').hidden)disposeGlobe=window.PassportGlobe($('passport-globe'),latest.map(h=>country(h.hostId)),openCity);
+ if(!$('passport').hidden&&passportTab==='places')disposeGlobe=window.PassportGlobe($('passport-globe'),latest.map(h=>country(h.hostId)),openCity);
  $('download-passport').disabled=!history.length;
 }
 function historyReplaceHash(){window.history.replaceState(null,'',location.pathname+location.search);}
@@ -169,13 +187,15 @@ function initializeMap(revealed){
 }
 function newDispatch(){
  if(state.phase!=='summit'&&(state.index>0||E.current(state).pin||E.current(state).clues>1)&&!confirm('Start a new dispatch? Your unfinished dispatch will be replaced. Completed passport stamps stay saved.'))return;
- state=E.generate(newSeed(),D,history);mapView=null;transition();
+ state=E.generate(newSeed(),D,history,exportExposure);recordExportExposure();selectedCity=null;historyReplaceHash();mapView=null;transition();
 }
 function doAction(action){
  const r=E.current(state);let changed=false;
  if(action==='clue'&&r.kind==='map'&&state.phase==='play'){r.clues=Math.min(5,r.clues+1);save();render();return;}
  if(action==='lock-map'){if(!E.lockMap(state,D)){$('map-status').textContent='Place a pin on the city first, then agree and lock it.';return;}return transition();}
  if(action==='answer'){if(!r.selected.length){r.message='Choose a country together, then send your answer.';save();render();return;}changed=E.answer(state,r.selected[0]);if(state.phase==='play')r.selected=[];}
+ if(action==='quiz-next'){E.nextQuiz(state);return transition();}
+ if(action==='quiz-skip'){E.answerQuiz(state,null,D);save();render();return;}
  if(action==='deliver')changed=E.checkRoute(state,D);
  if(action==='undo-route'||action==='reset-route'){E.undoRoute(state,D,action==='reset-route');save();render();return;}
  if(action==='deliver'&&!changed){save();render();return;}
@@ -191,6 +211,7 @@ function doAction(action){
  if(changed){if(state.phase==='result'||state.phase==='summit')transition();else{save();render();}}
 }
 function bind(){
+ $('puzzle').querySelectorAll('[data-quiz-answer]').forEach(b=>b.onclick=()=>{const r=E.current(state);E.answerQuiz(state,r.questions[r.quizIndex].options[Number(b.dataset.quizAnswer)],D);save();render();});
  $('puzzle').querySelectorAll('[data-route-country]').forEach(b=>b.onclick=()=>{E.routeStep(state,b.dataset.routeCountry,D);save();render();});
  if($('pick-five-form'))$('pick-five-form').onsubmit=event=>{event.preventDefault();const text=$('country-search').value;E.addPick(state,text,D);save();render();if($('country-search')&&!$('country-search').disabled)$('country-search').focus();};
  $('puzzle').querySelectorAll('[data-remove-pick]').forEach(b=>b.onclick=()=>{E.current(state).picks.splice(Number(b.dataset.removePick),1);E.current(state).message='';save();render();});
@@ -202,7 +223,8 @@ function bind(){
 }
 function download(value,name){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 $('new-dispatch').onclick=newDispatch;
-$('passport-toggle').onclick=()=>{const panel=$('passport');panel.hidden=!panel.hidden;$('passport-toggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){renderPassport();panel.scrollIntoView({behavior:'smooth'});}else if(disposeGlobe){disposeGlobe();disposeGlobe=null;}};
+$('passport-toggle').onclick=()=>{const panel=$('passport');panel.hidden=!panel.hidden;$('passport-toggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){renderPassport();panel.scrollIntoView({behavior:'smooth'});}else{if(location.hash.startsWith('#city='))historyReplaceHash();if(disposeGlobe){disposeGlobe();disposeGlobe=null;}}};
+for(const name of ['places','recipes']){$('passport-'+name+'-tab').onclick=()=>{passportTab=name;renderPassport();save();};$('passport-'+name+'-tab').onkeydown=event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();passportTab=event.key==='Home'?'places':event.key==='End'?'recipes':passportTab==='places'?'recipes':'places';renderPassport();save();$('passport-'+passportTab+'-tab').focus();}};}
 $('download-passport').onclick=()=>download(history,'our-diplomatic-passport.json');
 archive();render();save();
 if(location.hash.startsWith('#city=')){const id=location.hash.slice(6);if(history.some(h=>h.hostId===id)){$('passport').hidden=false;$('passport-toggle').setAttribute('aria-expanded','true');openCity(id);}}

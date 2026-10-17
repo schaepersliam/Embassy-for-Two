@@ -1,0 +1,794 @@
+[
+  {
+    "id": "USA",
+    "name": "United States",
+    "region": "Northern America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/USA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 117160520.56
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 112880226.33
+      },
+      {
+        "code": "854211",
+        "original": "Monolithic integrated circuits, digital",
+        "value": 42676953.29
+      },
+      {
+        "code": "300290",
+        "original": "Human and animal blood; microbial cultures; tox",
+        "value": 37912690.71
+      },
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 35563798.47
+      }
+    ]
+  },
+  {
+    "id": "CAN",
+    "name": "Canada",
+    "region": "Northern America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/CAN/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 99464941.11
+      },
+      {
+        "code": "710812",
+        "original": "Gold in unwrought forms non-monetary",
+        "value": 20445016.2
+      },
+      {
+        "code": "870323",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 17765211.45
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 14467431.84
+      },
+      {
+        "code": "870324",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 9789440.35
+      }
+    ]
+  },
+  {
+    "id": "MEX",
+    "name": "Mexico",
+    "region": "Central America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/MEX/Year/2023/Summary",
+    "products": [
+      {
+        "code": "870323",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 29797256.44
+      },
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 27579902.89
+      },
+      {
+        "code": "870431",
+        "original": "Gas powered trucks with a GVW not exceeding fiv",
+        "value": 25353987.13
+      },
+      {
+        "code": "847191",
+        "original": "Digital process units whether or not presented",
+        "value": 20121903.18
+      },
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 12630726.87
+      }
+    ]
+  },
+  {
+    "id": "BRA",
+    "name": "Brazil",
+    "region": "South America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/BRA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "120100",
+        "original": "Soya beans",
+        "value": 53244619.43
+      },
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 42611148.6
+      },
+      {
+        "code": "260111",
+        "original": "Non-agglomerated iron ores and concentrates",
+        "value": 27298053.22
+      },
+      {
+        "code": "100590",
+        "original": "Maize (excl. seed)",
+        "value": 13465452.72
+      },
+      {
+        "code": "170111",
+        "original": "Raw cane sugar, in solid form",
+        "value": 13348669.24
+      }
+    ]
+  },
+  {
+    "id": "ARG",
+    "name": "Argentina",
+    "region": "South America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/ARG/Year/2023/Summary",
+    "products": [
+      {
+        "code": "230400",
+        "original": "Oil-cake and other solid residues, of soya-bean",
+        "value": 7379819.24
+      },
+      {
+        "code": "100590",
+        "original": "Maize (excl. seed)",
+        "value": 6113052.06
+      },
+      {
+        "code": "870421",
+        "original": "Diesel powered trucks with a GVW not exceeding",
+        "value": 4281762.41
+      },
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 3733440.37
+      },
+      {
+        "code": "150710",
+        "original": "Crude soya-bean oil",
+        "value": 3303949.61
+      }
+    ]
+  },
+  {
+    "id": "COL",
+    "name": "Colombia",
+    "region": "South America",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/COL/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 12659153.73
+      },
+      {
+        "code": "270112",
+        "original": "Bituminous coal, not agglomerated",
+        "value": 8014982.67
+      },
+      {
+        "code": "710812",
+        "original": "Gold in unwrought forms non-monetary",
+        "value": 3221994.08
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 2930050.44
+      },
+      {
+        "code": "090111",
+        "original": "Coffee, not roasted or decaffeinated",
+        "value": 2791949.52
+      }
+    ]
+  },
+  {
+    "id": "GBR",
+    "name": "United Kingdom",
+    "region": "Northern Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/GBR/Year/2023/Summary",
+    "products": [
+      {
+        "code": "710813",
+        "original": "Gold in oth semi-manufactured forms,non-monetar",
+        "value": 65183885.07
+      },
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 21100693.18
+      },
+      {
+        "code": "841112",
+        "original": "Turbo-jets of a thrust exceeding 25 KN",
+        "value": 20686267.3
+      },
+      {
+        "code": "870390",
+        "original": "Automobiles nes including gas turbine powered",
+        "value": 19382382.12
+      },
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 16093547.83
+      }
+    ]
+  },
+  {
+    "id": "FRA",
+    "name": "France",
+    "region": "Western Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/FRA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "880240",
+        "original": "Aircraft nes of an unladen weight exceeding 15,",
+        "value": 25355480.76
+      },
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 17142483.19
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 11985519.07
+      },
+      {
+        "code": "271121",
+        "original": "Natural gas in gaseous state",
+        "value": 10840135.64
+      },
+      {
+        "code": "841112",
+        "original": "Turbo-jets of a thrust exceeding 25 KN",
+        "value": 10667893.58
+      }
+    ]
+  },
+  {
+    "id": "ESP",
+    "name": "Spain",
+    "region": "Southern Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/ESP/Year/2023/Summary",
+    "products": [
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 18434739.67
+      },
+      {
+        "code": "870322",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 12554287.49
+      },
+      {
+        "code": "870390",
+        "original": "Automobiles nes including gas turbine powered",
+        "value": 12187944.37
+      },
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 11195110.14
+      },
+      {
+        "code": "870321",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 6034006.84
+      }
+    ]
+  },
+  {
+    "id": "ITA",
+    "name": "Italy",
+    "region": "Southern Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/ITA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 28084374.41
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 19982235.73
+      },
+      {
+        "code": "711319",
+        "original": "Art. of jewellery and pts thereof of/o prec mtl",
+        "value": 9978950.05
+      },
+      {
+        "code": "870324",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 6922731.96
+      },
+      {
+        "code": "300290",
+        "original": "Human and animal blood; microbial cultures; tox",
+        "value": 6916096.89
+      }
+    ]
+  },
+  {
+    "id": "NLD",
+    "name": "Netherlands",
+    "region": "Western Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/NLD/Year/2023/Summary",
+    "products": [
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 71978748.03
+      },
+      {
+        "code": "847989",
+        "original": "Machines & mechanical appliances nes having ind",
+        "value": 20988856.82
+      },
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 20071045.11
+      },
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 17016724.09
+      },
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 15348015.1
+      }
+    ]
+  },
+  {
+    "id": "POL",
+    "name": "Poland",
+    "region": "Eastern Europe",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/POL/Year/2023/Summary",
+    "products": [
+      {
+        "code": "850780",
+        "original": "Electric accumulators, nes",
+        "value": 11446087.99
+      },
+      {
+        "code": "870421",
+        "original": "Diesel powered trucks with a GVW not exceeding",
+        "value": 5504120.18
+      },
+      {
+        "code": "240220",
+        "original": "Cigarettes containing tobacco",
+        "value": 4825460.56
+      },
+      {
+        "code": "852810",
+        "original": "Television receivers including video monitors a",
+        "value": 4746271.64
+      },
+      {
+        "code": "870829",
+        "original": "Parts and accessories of bodies nes for motor v",
+        "value": 3911689.21
+      }
+    ]
+  },
+  {
+    "id": "JPN",
+    "name": "Japan",
+    "region": "Eastern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/JPN/Year/2023/Summary",
+    "products": [
+      {
+        "code": "870390",
+        "original": "Automobiles nes including gas turbine powered",
+        "value": 39449147.77
+      },
+      {
+        "code": "870323",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 38582503.77
+      },
+      {
+        "code": "854211",
+        "original": "Monolithic integrated circuits, digital",
+        "value": 28497076.5
+      },
+      {
+        "code": "847989",
+        "original": "Machines & mechanical appliances nes having ind",
+        "value": 25976452.97
+      },
+      {
+        "code": "870324",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 18790590.0
+      }
+    ]
+  },
+  {
+    "id": "KOR",
+    "name": "South Korea",
+    "region": "Eastern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/KOR/Year/2023/Summary",
+    "products": [
+      {
+        "code": "854211",
+        "original": "Monolithic integrated circuits, digital",
+        "value": 85809142.0
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 50890325.18
+      },
+      {
+        "code": "870390",
+        "original": "Automobiles nes including gas turbine powered",
+        "value": 24208179.45
+      },
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 21184017.0
+      },
+      {
+        "code": "870323",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 19280805.08
+      }
+    ]
+  },
+  {
+    "id": "IND",
+    "name": "India",
+    "region": "Southern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/IND/Year/2023/Summary",
+    "products": [
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 84963281.53
+      },
+      {
+        "code": "710239",
+        "original": "Diamonds non-industrial nes excluding mounted o",
+        "value": 17336157.14
+      },
+      {
+        "code": "300490",
+        "original": "Other medicaments of mixed or unmixed products,",
+        "value": 16237588.19
+      },
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 15243172.6
+      },
+      {
+        "code": "711319",
+        "original": "Art. of jewellery and pts thereof of/o prec mtl",
+        "value": 11044813.94
+      }
+    ]
+  },
+  {
+    "id": "IDN",
+    "name": "Indonesia",
+    "region": "Southeastern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/IDN/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270119",
+        "original": "Other coal, not agglomerated, nes",
+        "value": 24695201.82
+      },
+      {
+        "code": "151190",
+        "original": "Palm oil (excl. crude) and liquid fractions",
+        "value": 19630050.88
+      },
+      {
+        "code": "720260",
+        "original": "Ferro-nickel",
+        "value": 15290347.08
+      },
+      {
+        "code": "270112",
+        "original": "Bituminous coal, not agglomerated",
+        "value": 9687353.56
+      },
+      {
+        "code": "260300",
+        "original": "Copper ores and concentrates",
+        "value": 8326476.67
+      }
+    ]
+  },
+  {
+    "id": "VNM",
+    "name": "Vietnam",
+    "region": "Southeastern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/VNM/Year/2023/Summary",
+    "products": [
+      {
+        "code": "852520",
+        "original": "Transmission apparatus, for radioteleph incorpo",
+        "value": 63427209.94
+      },
+      {
+        "code": "847330",
+        "original": "Parts and accessories of automatic data process",
+        "value": 14720625.38
+      },
+      {
+        "code": "854211",
+        "original": "Monolithic integrated circuits, digital",
+        "value": 11933970.73
+      },
+      {
+        "code": "854140",
+        "original": "Photosensitive semiconductor devices,photovolta",
+        "value": 8527251.88
+      },
+      {
+        "code": "847193",
+        "original": "Storage units, whether or not presented with th",
+        "value": 7110073.93
+      }
+    ]
+  },
+  {
+    "id": "THA",
+    "name": "Thailand",
+    "region": "Southeastern Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/THA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "847330",
+        "original": "Parts and accessories of automatic data process",
+        "value": 12978878.03
+      },
+      {
+        "code": "854211",
+        "original": "Monolithic integrated circuits, digital",
+        "value": 8877501.96
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 8867657.07
+      },
+      {
+        "code": "870421",
+        "original": "Diesel powered trucks with a GVW not exceeding",
+        "value": 8021743.6
+      },
+      {
+        "code": "710812",
+        "original": "Gold in unwrought forms non-monetary",
+        "value": 5955866.19
+      }
+    ]
+  },
+  {
+    "id": "ZAF",
+    "name": "South Africa",
+    "region": "Southern Africa",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/ZAF/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270112",
+        "original": "Bituminous coal, not agglomerated",
+        "value": 6854197.88
+      },
+      {
+        "code": "710813",
+        "original": "Gold in oth semi-manufactured forms,non-monetar",
+        "value": 6290623.25
+      },
+      {
+        "code": "870421",
+        "original": "Diesel powered trucks with a GVW not exceeding",
+        "value": 5426976.47
+      },
+      {
+        "code": "720241",
+        "original": "Ferro-chromium containing by weight more than 4",
+        "value": 4225932.11
+      },
+      {
+        "code": "260111",
+        "original": "Non-agglomerated iron ores and concentrates",
+        "value": 4175813.39
+      }
+    ]
+  },
+  {
+    "id": "NGA",
+    "name": "Nigeria",
+    "region": "Western Africa",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/NGA/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 52520992.08
+      },
+      {
+        "code": "271111",
+        "original": "Natural gas, liquefied",
+        "value": 5965547.9
+      },
+      {
+        "code": "310210",
+        "original": "Urea",
+        "value": 1067751.9
+      },
+      {
+        "code": "180100",
+        "original": "Cocoa beans, whole or broken, raw or roasted",
+        "value": 669988.56
+      },
+      {
+        "code": "271129",
+        "original": "Petroleum gases and other gaseous hydrocarbons",
+        "value": 653969.47
+      }
+    ]
+  },
+  {
+    "id": "EGY",
+    "name": "Egypt",
+    "region": "Northern Africa",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/EGY/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 2638393.0
+      },
+      {
+        "code": "271111",
+        "original": "Natural gas, liquefied",
+        "value": 2565664.0
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 1968454.71
+      },
+      {
+        "code": "710812",
+        "original": "Gold in unwrought forms non-monetary",
+        "value": 1826478.67
+      },
+      {
+        "code": "310210",
+        "original": "Urea",
+        "value": 1729834.49
+      }
+    ]
+  },
+  {
+    "id": "MAR",
+    "name": "Morocco",
+    "region": "Northern Africa",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/MAR/Year/2023/Summary",
+    "products": [
+      {
+        "code": "870322",
+        "original": "Automobiles with reciprocating piston engine di",
+        "value": 4255391.56
+      },
+      {
+        "code": "854430",
+        "original": "Ignition wiring sets&oth wiring sets of a kind",
+        "value": 2224881.56
+      },
+      {
+        "code": "310530",
+        "original": "Diammonium hydrogenorthophosphate (diammonium p",
+        "value": 2032762.44
+      },
+      {
+        "code": "310540",
+        "original": "Ammonium dihydrogenorthophosphate (monoammonium",
+        "value": 1770847.25
+      },
+      {
+        "code": "280920",
+        "original": "Phosphoric acid and polyphosphoric acids",
+        "value": 1276527.33
+      }
+    ]
+  },
+  {
+    "id": "SAU",
+    "name": "Saudi Arabia",
+    "region": "Western Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/SAU/Year/2023/Summary",
+    "products": [
+      {
+        "code": "270900",
+        "original": "Petroleum oils and oils obtained from bituminou",
+        "value": 175993253.25
+      },
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 60961930.35
+      },
+      {
+        "code": "271112",
+        "original": "Propane, liquefied",
+        "value": 9510956.56
+      },
+      {
+        "code": "390210",
+        "original": "Polypropylene, in primary forms",
+        "value": 4806300.14
+      },
+      {
+        "code": "390110",
+        "original": "Polyethylene having a specific gravity <0.94, i",
+        "value": 4208862.8
+      }
+    ]
+  },
+  {
+    "id": "TUR",
+    "name": "Türkiye",
+    "region": "Western Asia",
+    "tradeSource": "https://wits.worldbank.org/CountryProfile/en/Country/TUR/Year/2023/Summary",
+    "products": [
+      {
+        "code": "271000",
+        "original": "Petroleum oils, etc, (excl. crude); preparation",
+        "value": 13767351.79
+      },
+      {
+        "code": "711319",
+        "original": "Art. of jewellery and pts thereof of/o prec mtl",
+        "value": 8235638.57
+      },
+      {
+        "code": "870390",
+        "original": "Automobiles nes including gas turbine powered",
+        "value": 4828466.6
+      },
+      {
+        "code": "870421",
+        "original": "Diesel powered trucks with a GVW not exceeding",
+        "value": 4636962.73
+      },
+      {
+        "code": "710812",
+        "original": "Gold in unwrought forms non-monetary",
+        "value": 3919900.4
+      }
+    ]
+  }
+]

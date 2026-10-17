@@ -18,15 +18,15 @@ Then visit http://127.0.0.1:8000. Maps and optional fonts need internet. The rem
 2. **Read the exports.** Identify a country from a proportional mosaic of five leading export products.
 3. **Uncover the link.** Find three of six countries sharing a hidden export, historical link or supply-chain role. Each distinct incorrect trio reveals another of three progressively easier clues.
 4. **Trade five.** Each new dispatch randomly chooses export destinations, exported goods, or imported goods, avoiding the previous mode. Search for five countries or products, then lock to reveal the true ranking. Product names and six-digit HS codes are accepted; each match earns 20 points.
-5. **Deliver the pouch.** Plan an overland courier route across an 18-country European board. Make a required pickup, avoid a fictional closed country, and stay within a crossing budget. Undo and reset are free; invalid moves cost points.
+5. **City trivia.** Five multiple-choice questions about the posting city, mixing culture, history, food, landmarks, and government. Each correct answer earns 20 points. Explanations and source links appear after every answer; skips earn zero. Answers lock once, and progress survives reloads.
 
 The summit opens after all five assignments. Explore a photographed city guide with two travel ideas and a local dish linked to a recipe. Save future trips and virtual cooking dates in the passport, choose a shared off-duty activity and start another dispatch whenever you want. Intended for relaxed discussion; there is no minimum or maximum session length.
 
 ## Variety
 
-The starter data contains **12 host cities, 12 real export profiles, 12 import-product baskets, 11 top-five export-market profiles, 9 hidden-link themes, 20 courier scenarios, and 12 city guides (earlier completed political rounds remain in saved histories)**. Seeded generation varies the host, trade cases, political rules, country selections, and card order. It is a finite curated data library with many combinations, not unlimited unique facts or AI-written cases.
+The starter data contains **12 host cities, 36 real export profiles, 12 import-product baskets, 11 top-five export-market profiles, 9 hidden-link themes, 60 city-trivia questions, and 12 city guides (earlier completed political rounds remain in saved histories)**. Seeded generation varies the host, trade cases, political rules, country selections, and card order. It is a finite curated data library with many combinations, not unlimited unique facts or AI-written cases.
 
-Completed host cities rotate through all twelve before a new cycle starts. Trade cases avoid the previous three completed dispatches where possible. Courier scenarios avoid the previous three completed dispatches when possible. Unfinished rounds resume on reload. A new unfinished dispatch is not counted in the completed tour.
+Completed host cities rotate through all twelve before a new cycle starts. Trade cases avoid the previous three completed dispatches where possible. Stage-two targets rotate through all 36 export profiles before repeating, including when unfinished dispatches are replaced. Its six-country answer boards draw from the larger pool and avoid recent decoys. Unfinished rounds resume on reload. A new unfinished dispatch is not counted in the completed tour.
 
 The China story remains reserved for later; China may appear as an ordinary trade destination in real-world data.
 
@@ -53,7 +53,7 @@ Each assignment is worth up to 100 points, for a 500-point dispatch.
 
 ## Saving
 
-Progress and completed passport stamps are saved only in this browser's `localStorage`, under a new v3 key. Existing v3 saves keep finished rounds and upgrade unfinished stages 3, 4, and 5. Older game saves are preserved. Saved trips and recipe links also stay in this browser. Clearing browser data removes local saves. Failed storage displays a message; the game remains playable in the open tab.
+Progress and completed passport stamps are saved only in this browser's `localStorage`, under a new v3 key. Existing v3 saves keep finished rounds and upgrade unfinished stages 3, 4, and 5. An untouched stage-two board also receives fresh decoys from the expanded pool. Older game saves are preserved. Saved trips and recipe links also stay in this browser. Clearing browser data removes local saves. Failed storage displays a message; the game remains playable in the open tab.
 
 The passport can be downloaded as JSON, and a finished dispatch can export its postcard. Import is not implemented. New dispatch replaces an unfinished session after an in-app confirmation and retains completed stamps. `?playtest=1` uses a separate save for browser QA.
 
@@ -102,8 +102,16 @@ Dish photographs are bundled in `assets/dishes/`, with full attribution in `cred
 
 Writing conventions: use American English and the Oxford comma in user-facing lists.
 
-## Courier board
+## Earlier courier board
 
-Twenty seeded scenarios use a simplified mainland-Europe land-border graph. Geographic source: Eurostat GISCO, Countries 2024. The 18 listed countries are the entire playable board; no flights, ferries, repeated countries, or transit through unlisted countries. Countries marked closed are fictional diplomatic restrictions, not reports of real travel restrictions. The crossing budget allows one extra crossing beyond a shortest valid route. A solution finder checks that every mission is solvable; alternative valid routes count.
+The previous stage-five courier round used twenty seeded scenarios on a simplified mainland-Europe land-border graph. It is retained only to read older completed saves. Geographic source: Eurostat GISCO, Countries 2024. The 18 listed countries are the entire playable board; no flights, ferries, repeated countries, or transit through unlisted countries. Countries marked closed are fictional diplomatic restrictions, not reports of real travel restrictions. The crossing budget allows one extra crossing beyond a shortest valid route. A solution finder checks that every mission is solvable; alternative valid routes count.
 
-Unfinished coalition rounds automatically become courier puzzles. Finished earlier rounds keep their scores and original labels. American product-label spelling changes also preserve guesses already saved in the browser.
+Unfinished coalition or courier rounds automatically become city quizzes. Finished earlier rounds keep their scores and original labels. American product-label spelling changes also preserve guesses already saved in the browser.
+
+## Export variety and recipe tabs
+
+Stage two now draws from 36 countries: the original 12 plus the United States, Canada, Mexico, Brazil, Argentina, Colombia, the United Kingdom, France, Spain, Italy, the Netherlands, Poland, Japan, South Korea, India, Indonesia, Vietnam, Thailand, South Africa, Nigeria, Egypt, Morocco, Saudi Arabia, and Türkiye. Source: each country’s 2023 WITS HS6 export basket. Additional raw source values are retained in `assets/export-expansion.json`; `scripts/fetch-export-expansion.py` refreshes that source snapshot.
+
+Browser-local exposure tracking balances export targets across all 36 countries and avoids recent answer-board decoys. It records started dispatches as well as completed ones, so starting over also progresses the export rotation. Host cities and the other rounds retain their existing pools.
+
+The passport now has **Places** and **Recipes** tabs. Recipes collects saved dishes, photographs, credits, source recipe links, and shortcuts back to the city pages. The selected tab is remembered in this browser. The city-trivia bank contains five sourced questions per host city; question order and answer order are shuffled.

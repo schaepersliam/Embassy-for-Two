@@ -4,23 +4,33 @@ const clamp=n=>Math.max(0,Math.min(100,n));
 function rng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let v=Math.imul(t^(t>>>15),1|t);v^=v+Math.imul(v^(v>>>7),61|v);return((v^(v>>>14))>>>0)/4294967296;};}
 function shuffle(items,random){const out=[...items];for(let i=out.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
 function makeRound(kind,fields){return{kind,...fields,clues:1,pin:null,tries:0,wrong:[],selected:[],submitted:[],eliminated:[],confirmed:[],favours:{host:false,allies:false,president:false},message:'',solved:false,assisted:false,points:0};}
-function generate(seed,data,history=[]){
+function generate(seed,data,history=[],exportExposure={}){
  const random=rng(seed),ids=data.countries.map(c=>c.id);
  const cycle=history.slice(Math.floor(history.length/ids.length)*ids.length).map(h=>h.hostId);
  const host=shuffle(ids.filter(id=>!cycle.includes(id)),random)[0];
  const recent=history.slice(-3).flatMap(h=>h.tradeIds||[]);
  let pool=ids.filter(id=>id!==host&&!recent.includes(id));
  if(pool.length<2)pool=ids.filter(id=>id!==host);
- const first=shuffle(pool,random)[0];
+ const exportIds=data.exportCountries.map(c=>c.id),seen=exportExposure.targets||history.map(h=>h.exportTarget||h.tradeIds?.[0]).filter(Boolean);
+ const counts=new Map(exportIds.map(id=>[id,seen.filter(x=>x===id).length]));const minimum=Math.min(...counts.values());const leastSeen=exportIds.filter(id=>counts.get(id)===minimum);
+ const first=shuffle(leastSeen.filter(id=>id!==host).length?leastSeen.filter(id=>id!==host):leastSeen,random)[0];
  const modes=['markets','export-goods','import-goods'].filter(m=>m!==history.at(-1)?.tradeMode);
  const tradeMode=shuffle(modes,random)[0];
  const eligible=pool.filter(id=>id!==first&&(tradeMode!=='markets'||data.countries.find(c=>c.id===id).markets));
  const second=shuffle(eligible.length?eligible:ids.filter(id=>id!==host&&id!==first&&(tradeMode!=='markets'||data.countries.find(c=>c.id===id).markets)),random)[0];
  const trade=[first,second];
- const optionIds=target=>shuffle([target,...shuffle(ids.filter(id=>id!==target),random).slice(0,5)],random);
+ const optionIds=target=>{const recentOptions=exportExposure.options||history.slice(-2).flatMap(h=>h.exportOptions||[]);const fresh=exportIds.filter(id=>id!==target&&!recentOptions.includes(id));const candidates=shuffle(fresh.length>=5?fresh:exportIds.filter(id=>id!==target),random);return shuffle([target,...candidates.slice(0,5)],random);};
  const hidden=makeHidden(seed,data,history,random);
- return{version:3,features:4,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1],tradeMode),makeCourier(seed,data,history,random)],postcard:'',recipeSaved:false,completedAt:null};
+ return{version:3,features:5,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1],tradeMode),makeQuiz(host,data,random)],postcard:'',recipeSaved:false,completedAt:null};
 }
+function makeQuiz(hostId,data,random=rng(1)){
+ const questions=shuffle(data.cityQuiz[hostId],random).slice(0,5).map(q=>({id:q.id,options:shuffle(q.options,random)}));return makeRound('quiz',{hostId,questions,quizIndex:0,responses:[],options:[]});
+}
+function answerQuiz(s,choice,data){
+ const r=current(s);if(s.phase!=='play'||r.kind!=='quiz'||r.responses.length!==r.quizIndex)return false;const slot=r.questions[r.quizIndex],q=data.quizQuestion(slot.id);if(choice!==null&&!slot.options.includes(choice))return false;
+ r.responses.push({questionId:q.id,choice,correct:choice===q.answer});r.message=choice===null?'Question skipped.':choice===q.answer?'Exactly right.':'A new fact for our next visit.';return true;
+}
+function nextQuiz(s){const r=current(s);if(s.phase!=='play'||r.kind!=='quiz'||r.responses.length!==r.quizIndex+1)return false;if(r.quizIndex===4)return settle(s,r,r.responses.filter(a=>a.correct).length*20);r.quizIndex++;r.message='';return true;}
 function makePickFive(target,mode='markets'){return makeRound('partner',{target,mode,options:[],picks:[],hits:[]});}
 function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
  const recent=history.slice(-1).flatMap(h=>h.ruleIds||[]);
@@ -39,9 +49,10 @@ function upgrade(s,data){
   if(!s.rounds[3].solved){const old=s.rounds[3].target;const target=data.countries.find(c=>c.id===old&&c.markets)||data.countries.find(c=>c.markets&&c.id!==s.hostId&&c.id!==s.rounds[1].target);s.rounds[3]=makePickFive(target.id);}
  }
  s.rounds[3].mode=s.rounds[3].mode||'markets';
- for(const key of ['picks','hits','confirmed'])if(s.rounds[3][key])s.rounds[3][key]=s.rounds[3][key].map(value=>String(value).replace(/\bPetrol\b/g,'Gasoline').replace(/\bpetrol\b/g,'gasoline').replace(/\baluminium\b/g,'aluminum').replace(/\btyres\b/g,'tires').replace(/\bflavouring\b/g,'flavoring'));
- if(s.features!==4&&!s.rounds[4].solved)s.rounds[4]=makeCourier(s.seed,data);
- s.features=4;s.recipeSaved=s.recipeSaved||false;return s;
+ for(const key of ['picks','hits','confirmed'])if(s.rounds[3][key])s.rounds[3][key]=s.rounds[3][key].map(value=>String(value).replace(/\bPetrol\b/g,'Gasoline').replace(/\bpetrol\b/g,'gasoline').replace(/\baluminium\b/g,'aluminum').replace(/\btyres\b/g,'tires').replace(/\bflavouring\b/g,'flavoring').replace(/\bjewellery\b/g,'jewelry').replace(/\btonnes\b/g,'metric tons'));
+ if(s.features!==5&&!s.rounds[4].solved)s.rounds[4]=makeQuiz(s.hostId,data,rng(s.seed^0x51A7));
+ if(s.features!==5&&!s.rounds[1].solved&&s.rounds[1].tries===0&&!s.rounds[1].selected.length&&!Object.values(s.rounds[1].favours).some(Boolean)){const r=s.rounds[1],random=rng(s.seed^0xB045D);r.options=shuffle([r.target,...shuffle(data.exportCountries.filter(c=>c.id!==r.target&&!r.options.includes(c.id)),random).slice(0,5).map(c=>c.id)],random);r.selected=[];}
+ s.features=5;s.recipeSaved=s.recipeSaved||false;return s;
 }
 function current(s){return s.rounds[s.index];}
 function distance(a,b){const r=n=>n*Math.PI/180;const h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 6371*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));}
@@ -119,7 +130,7 @@ function checkRoute(s,data){
 }
 function useFavour(s,kind,data){
  const r=current(s);const cost=kind==='president'?20:15;
- if(s.phase!=='play'||r.kind==='map'||r.favours[kind]||s.favours[kind]<cost)return false;
+ if(s.phase!=='play'||['map','quiz'].includes(r.kind)||r.favours[kind]||s.favours[kind]<cost)return false;
  if(kind==='president'&&r.tries===0)return false;
  if(!['host','allies','president'].includes(kind))return false;
  if(kind==='host'&&r.kind==='hidden'&&r.linkClues>=3)return false;
@@ -142,13 +153,18 @@ function useFavour(s,kind,data){
  r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='courier'?'Your ally marked a next stop that keeps a valid route open.':r.kind==='partner'?'Your ally suggested one of the true top five.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
  return true;
 }
-function reveal(s){const r=current(s);if(s.phase!=='play'||r.kind==='map')return false;return settle(s,r,0,true);}
+function reveal(s){const r=current(s);if(s.phase!=='play'||r.kind==='map')return false;return settle(s,r,r.kind==='quiz'?r.responses.filter(a=>a.correct).length*20:0,true);}
 function advance(s){if(s.phase!=='result')return false;if(s.index===s.rounds.length-1){s.phase='summit';s.completedAt=s.completedAt||new Date().toISOString();}else{s.index++;s.phase='play';}return true;}
-function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,activityId:s.activityId??null,courierId:s.rounds[4].missionId||null,tradeMode:s.rounds[3].mode||'markets',roundScores:s.rounds.map(r=>r.points),recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
+function historyEntry(s){return{seed:s.seed,hostId:s.hostId,exportTarget:s.rounds[1].target,exportOptions:s.rounds[1].options,finalKind:s.rounds[4].kind,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,activityId:s.activityId??null,courierId:s.rounds[4].missionId||null,tradeMode:s.rounds[3].mode||'markets',roundScores:s.rounds.map(r=>r.points),recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
+function validQuiz(r,s,data){
+ if(r.hostId!==s.hostId||!Array.isArray(r.questions)||r.questions.length!==5||new Set(r.questions.map(q=>q.id)).size!==5||!Number.isInteger(r.quizIndex)||r.quizIndex<0||r.quizIndex>4||!Array.isArray(r.responses)||![r.quizIndex,r.quizIndex+1].includes(r.responses.length))return false;
+ if(!r.questions.every(slot=>{const q=data.cityQuiz[s.hostId].find(q=>q.id===slot.id);return q&&Array.isArray(slot.options)&&slot.options.length===4&&new Set(slot.options).size===4&&slot.options.every(a=>q.options.includes(a));}))return false;
+ return r.responses.every((a,i)=>{const slot=r.questions[i],q=data.quizQuestion(slot.id);return a.questionId===slot.id&&(a.choice===null||slot.options.includes(a.choice))&&a.correct===(a.choice===q.answer);});
+}
 function validate(s,data){
  if(!s||s.version!==3||!Number.isInteger(s.seed)||!data.countries.some(c=>c.id===s.hostId)||!['play','result','summit'].includes(s.phase)||!Number.isInteger(s.index)||s.index<0||s.index>4||!Array.isArray(s.rounds)||s.rounds.length!==5||!s.favours)return false;
  if(!['host','allies','president'].every(k=>Number.isFinite(s.favours[k])&&s.favours[k]>=0&&s.favours[k]<=100))return false;
- return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden','courier'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='courier'?data.courierMissions.some(m=>m.id===r.missionId&&data.courierPathValid(m,r.route)):r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
+ return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden','courier','quiz'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='quiz'?validQuiz(r,s,data):r.kind==='courier'?data.courierMissions.some(m=>m.id===r.missionId&&data.courierPathValid(m,r.route)):r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
 }
-const api={routeStep,undoRoute,checkRoute,mapScore,resetSelection,generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
+const api={answerQuiz,nextQuiz,routeStep,undoRoute,checkRoute,mapScore,resetSelection,generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

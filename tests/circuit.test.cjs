@@ -3,13 +3,15 @@ const assert=require('node:assert/strict');
 const D=require('../circuit-data.js');
 require('../circuit-additions.js');
 require('../trade-modes.js');
+require('../export-expansion.js');
+require('../city-quiz.js');
 require('../courier-data.js');
 require('../city-guide.js');
 require('../posting-clues.js');
 const E=require('../circuit-engine.js');
 const make=seed=>E.generate(seed,D);
 function finishMap(s){const c=D.countries.find(c=>c.id===s.hostId);E.current(s).pin={lat:c.lat,lng:c.lng};assert.ok(E.lockMap(s,D));}
-function solve(s){const r=E.current(s);if(r.kind==='map')finishMap(s);else if(r.kind==='courier'){const m=D.courierMissions.find(m=>m.id===r.missionId);D.courierSolution(m).slice(1).forEach(id=>assert.ok(E.routeStep(s,id,D)));assert.ok(E.checkRoute(s,D));}else if(['connections','hidden'].includes(r.kind)){r.answers.forEach(id=>E.select(s,id));assert.ok(E.checkSet(s));}else if(r.kind==='partner'){D.pickFiveRows(r).forEach(m=>assert.ok(E.addPick(s,m[0],D)));assert.ok(E.lockPicks(s,D));}else assert.ok(E.answer(s,r.answer));}
+function solve(s){const r=E.current(s);if(r.kind==='map')finishMap(s);else if(r.kind==='quiz'){for(let i=0;i<5;i++){E.answerQuiz(s,D.quizQuestion(r.questions[i].id).answer,D);E.nextQuiz(s);}}else if(r.kind==='courier'){const m=D.courierMissions.find(m=>m.id===r.missionId);D.courierSolution(m).slice(1).forEach(id=>assert.ok(E.routeStep(s,id,D)));assert.ok(E.checkRoute(s,D));}else if(['connections','hidden'].includes(r.kind)){r.answers.forEach(id=>E.select(s,id));assert.ok(E.checkSet(s));}else if(r.kind==='partner'){D.pickFiveRows(r).forEach(m=>assert.ok(E.addPick(s,m[0],D)));assert.ok(E.lockPicks(s,D));}else assert.ok(E.answer(s,r.answer));}
 test('data keeps real-valued five-product baskets and source provenance',()=>{
  assert.equal(D.countries.length,12);
  for(const c of D.countries){assert.equal(c.products.length,5);assert.equal(new Set(c.products.map(p=>p.code)).size,5);assert.ok(c.products.every(p=>p.value>0&&p.code.length===6));assert.ok(c.tradeSource.includes('/2023/'));assert.ok(c.geoSource.startsWith('https://data.un.org/'));assert.ok(D.partnerRegions[c.partner]);}
@@ -18,13 +20,14 @@ test('4,000 generated dispatches have valid unique options and exactly three tru
  for(let seed=1;seed<=4000;seed++){
   const s=make(seed);assert.ok(E.validate(s,D));assert.equal(s.rounds[0].kind,'map');assert.equal(new Set([s.hostId,...s.rounds.filter(r=>r.target).map(r=>r.target)]).size,3);
   for(const r of s.rounds.slice(1)){
+   if(r.kind==='quiz'){assert.equal(r.questions.length,5);continue;}
    if(r.kind==='courier'){assert.ok(D.courierSolution(D.courierMissions.find(m=>m.id===r.missionId)));continue;}
    if(r.kind==='partner'){assert.equal(D.pickFiveRows(r).length,5);continue;}
    assert.equal(r.options.length,6);assert.equal(new Set(r.options).size,6);
    if(r.kind==='connections'){const rule=D.rules.find(g=>g.id===r.ruleId);assert.deepEqual(r.options.filter(id=>rule.test(D.countries.find(c=>c.id===id))).sort(),[...r.answers].sort());}
    else if(r.kind==='hidden'){const t=D.themes.find(t=>t.id===r.themeId);assert.deepEqual(r.options.filter(id=>t.fixed?t.fixed.includes(id):t.test(D.countries.find(c=>c.id===id))).sort(),[...r.answers].sort());}else {assert.ok(r.options.includes(r.answer));if(r.kind==='partner')assert.ok(!r.options.includes(D.countries.find(c=>c.id===r.target).name));}
   }
-  assert.equal(s.rounds[4].kind,'courier');
+  assert.equal(s.rounds[4].kind,'quiz');
  }
 });
 test('generation is deterministic and completed hosts rotate through all twelve',()=>{
@@ -65,7 +68,7 @@ test('market data has five unique ranked countries, and allies suggest only one'
  const s=atRound(3),r=E.current(s);assert.ok(E.useFavour(s,'allies',D));assert.equal(r.picks.length,1);assert.ok(D.countries.find(c=>c.id===r.target).markets.some(m=>m[0]===r.picks[0]));assert.equal(E.useFavour(s,'allies',D),false);
 });
 test('previous saves retain completed rounds while upgrading unfinished puzzles',()=>{
- const s=atRound(2);delete s.features;s.rounds[2].kind='connections';s.rounds[2].ruleId=D.rules[0].id;s.rounds[3].target='AUS';const first=JSON.stringify(s.rounds.slice(0,2));E.upgrade(s,D);assert.equal(s.features,4);assert.equal(s.rounds[2].kind,'hidden');assert.ok(s.rounds[3].picks);assert.notEqual(s.rounds[3].target,'AUS');assert.equal(JSON.stringify(s.rounds.slice(0,2)),first);assert.ok(E.validate(s,D));
+ const s=atRound(2);delete s.features;s.rounds[2].kind='connections';s.rounds[2].ruleId=D.rules[0].id;s.rounds[3].target='AUS';const first=JSON.stringify(s.rounds.slice(0,2));E.upgrade(s,D);assert.equal(s.features,5);assert.equal(s.rounds[2].kind,'hidden');assert.ok(s.rounds[3].picks);assert.notEqual(s.rounds[3].target,'AUS');assert.equal(JSON.stringify(s.rounds.slice(0,2)),first);assert.ok(E.validate(s,D));
 });
 test('every city has a credited local photograph, activity links and a recipe',()=>{
  const fs=require('node:fs'),path=require('node:path'),photos=require('../city-photos.js');require('../city-guide.js');
@@ -99,18 +102,39 @@ test('all courier missions have valid symmetric land borders and a solvable deto
  for(const m of D.courierMissions){const path=D.courierSolution(m);assert.ok(path);assert.equal(path[0],m.start);assert.equal(path.at(-1),m.end);assert.ok(path.includes(m.via));assert.ok(!path.includes(m.blocked));assert.equal(new Set(path).size,path.length);assert.ok(path.length-1<=m.budget);assert.ok(path.length>=4);}
 });
 test('courier invalid moves charge once, and undo and reset preserve penalties',()=>{
- const s=atRound(4),r=E.current(s),m=D.courierMissions.find(m=>m.id===r.missionId);assert.equal(E.routeStep(s,m.blocked,D),false);assert.equal(r.tries,1);E.routeStep(s,m.blocked,D);assert.equal(r.tries,1);const path=D.courierSolution(m);assert.ok(E.routeStep(s,path[1],D));assert.ok(E.undoRoute(s,D));assert.deepEqual(r.route,[m.start]);E.routeStep(s,path[1],D);E.undoRoute(s,D,true);assert.equal(r.tries,1);assert.deepEqual(r.route,[m.start]);assert.ok(E.useFavour(s,'allies',D));assert.ok(D.courierSolution(m,[m.start,r.suggested]));
+ const s=atCourierRound(),r=E.current(s),m=D.courierMissions.find(m=>m.id===r.missionId);assert.equal(E.routeStep(s,m.blocked,D),false);assert.equal(r.tries,1);E.routeStep(s,m.blocked,D);assert.equal(r.tries,1);const path=D.courierSolution(m);assert.ok(E.routeStep(s,path[1],D));assert.ok(E.undoRoute(s,D));assert.deepEqual(r.route,[m.start]);E.routeStep(s,path[1],D);E.undoRoute(s,D,true);assert.equal(r.tries,1);assert.deepEqual(r.route,[m.start]);assert.ok(E.useFavour(s,'allies',D));assert.ok(D.courierSolution(m,[m.start,r.suggested]));
 });
 test('courier delivery requires the pickup and accepts an alternate valid route',()=>{
- const s=atRound(4),r=E.current(s),m=D.courierMissions[6];r.missionId=m.id;r.route=['HR','SI','AT','DE','NL'];assert.equal(E.checkRoute(s,D),false);assert.equal(r.tries,1);r.route=['HR','SI','AT','CH','DE','NL'];assert.ok(E.checkRoute(s,D));assert.equal(r.points,85);assert.equal(E.checkRoute(s,D),false);
+ const s=atCourierRound(),r=E.current(s),m=D.courierMissions[6];r.missionId=m.id;r.route=['HR','SI','AT','DE','NL'];assert.equal(E.checkRoute(s,D),false);assert.equal(r.tries,1);r.route=['HR','SI','AT','CH','DE','NL'];assert.ok(E.checkRoute(s,D));assert.equal(r.points,85);assert.equal(E.checkRoute(s,D),false);
 });
-test('unfinished old coalition rounds upgrade while completed rounds retain their scores',()=>{
- const s=atRound(4),legacy={...s.rounds[4],kind:'connections',ruleId:'eu',answers:['AUT','IRL','PRT'],options:['AUT','IRL','PRT','KEN','GHA','AUS']};s.features=3;s.rounds[4]=legacy;assert.ok(E.validate(s,D));E.upgrade(s,D);assert.equal(s.features,4);assert.equal(s.rounds[4].kind,'courier');
+test('unfinished old final rounds upgrade to city trivia while completed rounds retain their scores',()=>{
+ const s=atRound(4),legacy={...s.rounds[4],kind:'connections',ruleId:'eu',answers:['AUT','IRL','PRT'],options:['AUT','IRL','PRT','KEN','GHA','AUS']};s.features=3;s.rounds[4]=legacy;assert.ok(E.validate(s,D));E.upgrade(s,D);assert.equal(s.features,5);assert.equal(s.rounds[4].kind,'quiz');
  const done=make(3);done.features=3;done.rounds[4]={...legacy,solved:true,points:85};E.upgrade(done,D);assert.equal(done.rounds[4].kind,'connections');assert.equal(done.rounds[4].points,85);
 });
 test('active data copy uses American spelling',()=>{
- const strings=[...D.countries.flatMap(c=>c.products.map(p=>p.label)),...D.themes.flatMap(t=>[t.explain,...t.clues]),...Object.values(globalThis.CityGuide).flatMap(g=>[g.mood,g.dishText,...g.activities.flatMap(a=>a.slice(0,2))])];for(const text of strings)assert.doesNotMatch(text,/\b(harbour|colourful|favourite|cosy|neighbourhood|centre|organisation|travelling|travelled|defence|aluminium|tyres|petrol|flavouring)\b/i);
+ const strings=[...D.exportCountries.flatMap(c=>c.products.map(p=>p.label)),...D.goods.map(p=>p.label),...D.themes.flatMap(t=>[t.explain,...t.clues]),...Object.values(globalThis.CityGuide).flatMap(g=>[g.mood,g.dishText,...g.activities.flatMap(a=>a.slice(0,2))])];for(const text of strings)assert.doesNotMatch(text,/\b(harbour|colourful|favourite|cosy|neighbourhood|centre|organisation|travelling|travelled|defence|aluminium|tyres|petrol|flavouring|jewellery|tonnes)\b/i);
 });
 test('American spelling migration preserves petroleum and already entered guesses',()=>{
  const s=make(7);s.features=3;s.rounds[3].picks=['Refined petroleum products','Petrol cars, 1,500–3,000 cc','Unwrought aluminium alloys','Car tyres','Food & drink flavouring mixtures'];E.upgrade(s,D);assert.deepEqual(s.rounds[3].picks,['Refined petroleum products','Gasoline cars, 1,500–3,000 cc','Unwrought aluminum alloys','Car tires','Food & drink flavoring mixtures']);const before=JSON.stringify(s);E.upgrade(s,D);assert.equal(JSON.stringify(s),before);
+});
+
+function atCourierRound(){const s=atRound(4),m=D.courierMissions[0];Object.assign(s.rounds[4],{kind:'courier',missionId:m.id,route:[m.start]});return s;}
+test('stage two has 36 sourced global profiles with five distinct HS6 products each',()=>{
+ assert.equal(D.exportCountries.length,36);assert.equal(new Set(D.exportCountries.map(c=>c.id)).size,36);for(const c of D.exportCountries){assert.equal(c.products.length,5);assert.equal(new Set(c.products.map(p=>p.code)).size,5);assert.ok(c.products.every(p=>p.value>0&&p.label.length>2));assert.ok(c.tradeSource.includes('/2023/'));}for(const id of ['USA','BRA','JPN','IND','NGA','MAR','SAU','FRA'])assert.ok(D.exportCountries.some(c=>c.id===id));
+});
+test('export profiles rotate through all 36 even if dispatches are started without finishing',()=>{
+ const exposure={targets:[],options:[]};const targets=[];
+ for(let i=0;i<108;i++){const s=E.generate(700+i,D,[],exposure),r=s.rounds[1];targets.push(r.target);assert.equal(r.options.length,6);assert.equal(new Set(r.options).size,6);assert.ok(r.options.every(id=>D.exportCountries.some(c=>c.id===id)));const overlap=r.options.filter(id=>exposure.options.includes(id));assert.ok(overlap.every(id=>id===r.target));exposure.targets.push(r.target);exposure.options=[...exposure.options,...r.options].slice(-12);}
+ for(let i=0;i<3;i++)assert.equal(new Set(targets.slice(i*36,(i+1)*36)).size,36);
+});
+test('every host has exactly five city questions with four unique answers and source links',()=>{
+ for(const c of D.countries){assert.equal(D.cityQuiz[c.id].length,5);for(const q of D.cityQuiz[c.id]){assert.equal(q.options.length,4);assert.equal(new Set(q.options).size,4);assert.ok(q.options.includes(q.answer));assert.ok(q.explain.length>20);assert.ok(q.source.startsWith('https://'));}}
+});
+test('city quiz locks answers once, resumes feedback, and scores correct answers at 20 points',()=>{
+ const s=atRound(4),r=E.current(s);assert.equal(r.kind,'quiz');assert.equal(E.nextQuiz(s),false);assert.equal(E.answerQuiz(s,'not an option',D),false);
+ for(let i=0;i<5;i++){const q=D.quizQuestion(r.questions[i].id),choice=i<3?q.answer:i===3?q.options.find(a=>a!==q.answer):null;assert.ok(E.answerQuiz(s,choice,D));assert.equal(E.answerQuiz(s,q.answer,D),false);assert.ok(E.validate(JSON.parse(JSON.stringify(s)),D));assert.ok(E.nextQuiz(s));}
+ assert.equal(s.phase,'result');assert.equal(r.points,60);assert.equal(r.responses.length,5);assert.equal(E.nextQuiz(s),false);assert.equal(E.answerQuiz(s,null,D),false);
+});
+test('unfinished courier rounds become city quizzes without changing the first four rounds',()=>{
+ const s=atCourierRound();s.features=4;const before=JSON.stringify(s.rounds.slice(0,4));E.upgrade(s,D);assert.equal(s.rounds[4].kind,'quiz');assert.equal(s.rounds[4].hostId,s.hostId);assert.equal(JSON.stringify(s.rounds.slice(0,4)),before);
 });
