@@ -226,5 +226,24 @@ $('new-dispatch').onclick=newDispatch;
 $('passport-toggle').onclick=()=>{const panel=$('passport');panel.hidden=!panel.hidden;$('passport-toggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden){renderPassport();panel.scrollIntoView({behavior:'smooth'});}else{if(location.hash.startsWith('#city='))historyReplaceHash();if(disposeGlobe){disposeGlobe();disposeGlobe=null;}}};
 for(const name of ['places','recipes']){$('passport-'+name+'-tab').onclick=()=>{passportTab=name;renderPassport();save();};$('passport-'+name+'-tab').onkeydown=event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();passportTab=event.key==='Home'?'places':event.key==='End'?'recipes':passportTab==='places'?'recipes':'places';renderPassport();save();$('passport-'+passportTab+'-tab').focus();}};}
 $('download-passport').onclick=()=>download(history,'our-diplomatic-passport.json');
+const resetBackupKey='embassy-circuit-reset-backup-v1';
+const resetSaveKeys=['embassy-circuit-v3','embassy-circuit-v3-playtest'];
+try{$('undo-passport-reset').hidden=!localStorage.getItem(resetBackupKey);}catch{}
+$('reset-passport').onclick=()=>{
+ try{
+  const entries=Object.fromEntries(resetSaveKeys.map(key=>[key,localStorage.getItem(key)]));
+  localStorage.setItem(resetBackupKey,JSON.stringify(entries));
+  resetSaveKeys.forEach(key=>localStorage.removeItem(key));
+  location.replace(location.pathname+location.search);
+ }catch{$('reset-status').textContent='Reset could not finish. Your backup is kept in this browser; use Undo last reset to restore it.';$('undo-passport-reset').hidden=false;}
+};
+$('undo-passport-reset').onclick=()=>{
+ try{
+  const entries=JSON.parse(localStorage.getItem(resetBackupKey));
+  if(!entries||!resetSaveKeys.every(key=>Object.hasOwn(entries,key)&&(entries[key]===null||typeof entries[key]==='string')))throw new Error('Invalid backup');
+  resetSaveKeys.forEach(key=>{if(entries[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,entries[key]);});
+  location.replace(location.pathname+location.search);
+ }catch{$('reset-status').textContent='The backup could not be restored. Your current progress is still available.';}
+};
 archive();render();save();
 if(location.hash.startsWith('#city=')){const id=location.hash.slice(6);if(history.some(h=>h.hostId===id)){$('passport').hidden=false;$('passport-toggle').setAttribute('aria-expanded','true');openCity(id);}}
