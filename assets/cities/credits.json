@@ -1,0 +1,110 @@
+{
+  "AUT": {
+    "src": "assets/cities/AUT.jpg",
+    "alt": "Vienna skyline",
+    "title": "Vienna skyline across the Danube river.jpg",
+    "artist": "Sohom Datta",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Vienna_skyline_across_the_Danube_river.jpg"
+  },
+  "DEU": {
+    "src": "assets/cities/DEU.jpg",
+    "alt": "Berlin skyline",
+    "title": "Nr 2 Berlin Panorama von der Siegessäule 2021.jpg",
+    "artist": "Lear 21",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Nr_2_Berlin_Panorama_von_der_Siegess%C3%A4ule_2021.jpg"
+  },
+  "CHE": {
+    "src": "assets/cities/CHE.jpg",
+    "alt": "Bern skyline",
+    "title": "Bern Skyline.jpg",
+    "artist": "Anudeepvarada",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Bern_Skyline.jpg"
+  },
+  "NOR": {
+    "src": "assets/cities/NOR.jpg",
+    "alt": "Oslo skyline",
+    "title": "Oslo skyline.jpg",
+    "artist": "Audun",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Oslo_skyline.jpg"
+  },
+  "IRL": {
+    "src": "assets/cities/IRL.jpg",
+    "alt": "Dublin skyline",
+    "title": "Cathedral Dominates the Skyline of Dublin - panoramio.jpg",
+    "artist": "Lobster1",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Cathedral_Dominates_the_Skyline_of_Dublin_-_panoramio.jpg"
+  },
+  "PRT": {
+    "src": "assets/cities/PRT.jpg",
+    "alt": "Lisbon skyline",
+    "title": "Lisbon Skyline (45684560521).jpg",
+    "artist": "Neil",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lisbon_Skyline_(45684560521).jpg"
+  },
+  "CHL": {
+    "src": "assets/cities/CHL.jpg",
+    "alt": "Santiago Chile skyline",
+    "title": "Santiago Skyline (3048942585).jpg",
+    "artist": "Peretz Partensky from San Francisco, USA",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Santiago_Skyline_(3048942585).jpg"
+  },
+  "PER": {
+    "src": "assets/cities/PER.jpg",
+    "alt": "Lima Peru skyline",
+    "title": "Lima, Urban Skyline--Ciudad de Lima, Skyline urbano.jpg",
+    "artist": "Joshua87",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lima,_Urban_Skyline--Ciudad_de_Lima,_Skyline_urbano.jpg"
+  },
+  "AUS": {
+    "src": "assets/cities/AUS.jpg",
+    "alt": "Canberra skyline",
+    "title": "Canberra skyline, York Park conservation site, The National Circuit, Barton, ACT IMGP9718.jpg",
+    "artist": "John Robert McPherson",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Canberra_skyline,_York_Park_conservation_site,_The_National_Circuit,_Barton,_ACT_IMGP9718.jpg"
+  },
+  "KEN": {
+    "src": "assets/cities/KEN.png",
+    "alt": "Nairobi skyline",
+    "title": "Pangani Nairobi evening horizon skyline.png",
+    "artist": "Goweki",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Pangani_Nairobi_evening_horizon_skyline.png"
+  },
+  "NZL": {
+    "src": "assets/cities/NZL.jpg",
+    "alt": "Wellington New Zealand skyline",
+    "title": "Wellington Skyline (34319401232).jpg",
+    "artist": "Simeon W from Wellington, New Zealand",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Wellington_Skyline_(34319401232).jpg"
+  },
+  "GHA": {
+    "src": "assets/cities/GHA.jpg",
+    "alt": "Accra skyline",
+    "title": "Accra Skyline - Ghana.jpg",
+    "artist": "Synth85",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Accra_Skyline_-_Ghana.jpg"
+  }
+}

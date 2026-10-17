@@ -11,11 +11,11 @@ function generate(seed,data,history=[]){
  const recent=history.slice(-3).flatMap(h=>h.tradeIds||[]);
  let pool=ids.filter(id=>id!==host&&!recent.includes(id));
  if(pool.length<2)pool=ids.filter(id=>id!==host);
- const trade=shuffle(pool,random).slice(0,2);
+ const first=shuffle(pool,random)[0];
+ const eligible=pool.filter(id=>id!==first&&data.countries.find(c=>c.id===id).markets);
+ const second=shuffle(eligible.length?eligible:ids.filter(id=>id!==host&&id!==first&&data.countries.find(c=>c.id===id).markets),random)[0];
+ const trade=[first,second];
  const optionIds=target=>shuffle([target,...shuffle(ids.filter(id=>id!==target),random).slice(0,5)],random);
- const exporter=data.countries.find(c=>c.id===trade[1]);
- const partner=exporter.partner;
- const partnerOptions=shuffle([partner,...shuffle(Object.keys(data.partnerRegions).filter(name=>name!==partner&&name!==exporter.name),random).slice(0,5)],random);
  const lastRules=history.slice(-1).flatMap(h=>h.ruleIds||[]);
  const valid=data.rules.filter(rule=>data.countries.filter(rule.test).length>=3&&data.countries.filter(c=>!rule.test(c)).length>=3);
  const fresh=valid.filter(rule=>!lastRules.includes(rule.id));
@@ -25,14 +25,30 @@ function generate(seed,data,history=[]){
   const no=shuffle(data.countries.filter(c=>!rule.test(c)),random).slice(0,3).map(c=>c.id);
   return makeRound('connections',{ruleId:rule.id,answers:yes,options:shuffle([...yes,...no],random)});
  });
- return{version:3,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),political[0],makeRound('partner',{target:trade[1],answer:partner,options:partnerOptions}),political[1]],postcard:'',completedAt:null};
+ const hidden=makeHidden(seed,data,history,random);
+ return{version:3,features:2,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1]),political[1]],postcard:'',recipeSaved:false,completedAt:null};
+}
+function makePickFive(target){return makeRound('partner',{target,options:[],picks:[],hits:[]});}
+function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
+ const recent=history.slice(-1).flatMap(h=>h.ruleIds||[]);
+ const themes=data.themes.filter(t=>!recent.includes(t.id));
+ const theme=shuffle(themes.length?themes:data.themes,random)[0];
+ const answers=theme.fixed?[...theme.fixed]:shuffle(data.countries.filter(theme.test),random).slice(0,3).map(c=>c.id);
+ const no=data.countries.filter(c=>theme.fixed?!answers.includes(c.id):!theme.test(c));
+ return makeRound('hidden',{themeId:theme.id,linkClues:0,answers,options:shuffle([...answers,...shuffle(no,random).slice(0,3).map(c=>c.id)],random)});
+}
+function upgrade(s,data){
+ if(s.features===2)return s;
+ if(!s.rounds[2].solved)s.rounds[2]=makeHidden(s.seed,data);
+ if(!s.rounds[3].solved){const old=s.rounds[3].target;const target=data.countries.find(c=>c.id===old&&c.markets)||data.countries.find(c=>c.markets&&c.id!==s.hostId&&c.id!==s.rounds[1].target);s.rounds[3]=makePickFive(target.id);}
+ s.features=2;s.recipeSaved=s.recipeSaved||false;return s;
 }
 function current(s){return s.rounds[s.index];}
 function distance(a,b){const r=n=>n*Math.PI/180;const h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 6371*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));}
 function settle(s,round,points,assisted=false){
  if(s.phase!=='play'||round.solved)return false;
  round.solved=true;round.points=clamp(points);round.assisted=assisted;s.phase='result';
- const resource=round.kind==='map'?'host':round.kind==='connections'?'allies':'president';
+ const resource=round.kind==='map'?'host':['connections','hidden'].includes(round.kind)?'allies':'president';
  const reward=assisted?4:12,before=s.favours[resource];s.favours[resource]=clamp(before+reward);round.reward={resource,amount:s.favours[resource]-before};
  return true;
 }
@@ -43,33 +59,55 @@ function lockMap(s,data){
  return settle(s,r,Math.max(0,Math.round(100*Math.exp(-r.km/500))-5*(r.clues-1)));
 }
 function answer(s,choice){
- const r=current(s);if(s.phase!=='play'||!['exports','partner'].includes(r.kind)||!r.options.includes(choice)||r.eliminated.includes(choice)||r.wrong.includes(choice))return false;
+ const r=current(s);if(s.phase!=='play'||r.kind!=='exports'||!r.options.includes(choice)||r.eliminated.includes(choice)||r.wrong.includes(choice))return false;
  if(choice===r.answer)return settle(s,r,score(r));
  r.tries++;r.wrong.push(choice);r.message='That delegation doesn’t match. Talk it through and try another.';return true;
 }
 function select(s,id){
- const r=current(s);if(s.phase!=='play'||r.kind!=='connections'||!r.options.includes(id)||r.eliminated.includes(id)||r.confirmed.includes(id))return false;
+ const r=current(s);if(s.phase!=='play'||!['connections','hidden'].includes(r.kind)||!r.options.includes(id)||r.eliminated.includes(id)||r.confirmed.includes(id))return false;
  if(r.selected.includes(id))r.selected=r.selected.filter(x=>x!==id);
  else if(r.selected.length<3)r.selected.push(id);
  else{r.message='Three seats at this table. Unselect a country to swap it.';return false;}
  r.message='';return true;
 }
 function checkSet(s){
- const r=current(s);if(s.phase!=='play'||r.kind!=='connections')return false;
+ const r=current(s);if(s.phase!=='play'||!['connections','hidden'].includes(r.kind))return false;
  if(r.selected.length!==3){r.message='Choose exactly three countries together.';return false;}
  const signature=[...r.selected].sort().join(',');
  if(r.submitted.includes(signature)){r.message='You already tried that trio. Swap a country and try again.';return false;}
  r.submitted.push(signature);const correct=r.selected.filter(id=>r.answers.includes(id)).length;
  if(correct===3)return settle(s,r,score(r));
- r.tries++;r.message=`${correct} of those 3 belong at this table. Swap a country and try again.`;return true;
+ const priorClues=r.linkClues;
+ r.tries++;if(r.kind==='hidden')r.linkClues=Math.min(3,r.linkClues+1);
+ r.message=r.kind==='hidden'?(priorClues>=3?'That isn’t the intended trio. All three clues are open; try a different combination.':`That isn’t the intended trio. A new clue has opened${r.linkClues===3?' (the final clue is now visible)':''}.`):`${correct} of those 3 belong at this table. Swap a country and try again.`;return true;
+}
+function addPick(s,text,data){
+ const r=current(s);if(s.phase!=='play'||r.kind!=='partner'||!Array.isArray(r.picks))return false;
+ const name=data.normalizeCountry(text);
+ if(!name){r.message='Choose a recognised country from the search suggestions.';return false;}
+ if(name===data.countries.find(c=>c.id===r.target).name){r.message='An export destination must be another country.';return false;}
+ if(r.picks.includes(name)){r.message='That country is already on your list.';return false;}
+ if(r.picks.length>=5){r.message='Your five picks are ready. Remove one to change it.';return false;}
+ r.picks.push(name);r.message=r.picks.length===5?'Five picks ready. Lock them to reveal the true ranking.':'';return true;
+}
+function lockPicks(s,data){
+ const r=current(s);if(s.phase!=='play'||r.kind!=='partner'||!r.picks||r.picks.length!==5)return false;
+ const names=data.countries.find(c=>c.id===r.target).markets.map(m=>m[0]);
+ r.hits=r.picks.filter(name=>names.includes(name));return settle(s,r,r.hits.length*20);
 }
 function useFavour(s,kind,data){
  const r=current(s);const cost=kind==='president'?20:15;
  if(s.phase!=='play'||r.kind==='map'||r.favours[kind]||s.favours[kind]<cost)return false;
  if(kind==='president'&&r.tries===0)return false;
  if(!['host','allies','president'].includes(kind))return false;
+ if(kind==='host'&&r.kind==='hidden'&&r.linkClues>=3)return false;
+ if(kind==='host'&&r.kind==='hidden')r.linkClues=Math.min(3,r.linkClues+1);
  if(kind==='allies'){
-  if(r.kind==='connections'){
+  if(r.kind==='partner'){
+   if(r.picks.length>=5)return false;
+   const name=data.countries.find(c=>c.id===r.target).markets.map(m=>m[0]).find(name=>!r.picks.includes(name));
+   r.picks.push(name);r.confirmed.push(name);
+  }else if(['connections','hidden'].includes(r.kind)){
    const id=r.answers.find(id=>!r.confirmed.includes(id));r.confirmed.push(id);
    if(!r.selected.includes(id)){if(r.selected.length===3)r.selected.pop();r.selected.push(id);}
   }else{
@@ -78,16 +116,16 @@ function useFavour(s,kind,data){
   }
  }
  r.favours[kind]=true;s.favours[kind]-=cost;
- r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?'Your ally has marked one useful card.':'A local tip is now open below the puzzle.';
+ r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='partner'?'Your ally suggested one of the true top-five markets.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
  return true;
 }
 function reveal(s){const r=current(s);if(s.phase!=='play'||r.kind==='map')return false;return settle(s,r,0,true);}
 function advance(s){if(s.phase!=='result')return false;if(s.index===s.rounds.length-1){s.phase='summit';s.completedAt=s.completedAt||new Date().toISOString();}else{s.index++;s.phase='play';}return true;}
-function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>r.kind==='connections').map(r=>r.ruleId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard};}
+function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
 function validate(s,data){
  if(!s||s.version!==3||!Number.isInteger(s.seed)||!data.countries.some(c=>c.id===s.hostId)||!['play','result','summit'].includes(s.phase)||!Number.isInteger(s.index)||s.index<0||s.index>4||!Array.isArray(s.rounds)||s.rounds.length!==5||!s.favours)return false;
  if(!['host','allies','president'].every(k=>Number.isFinite(s.favours[k])&&s.favours[k]>=0&&s.favours[k]<=100))return false;
- return s.rounds.every(r=>r&&['map','exports','partner','connections'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
+ return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
 }
-const api={generate,current,distance,lockMap,answer,select,checkSet,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
+const api={generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
