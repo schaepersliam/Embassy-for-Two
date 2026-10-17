@@ -10,13 +10,13 @@ Open `index.html` in a browser, or serve this folder:
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Visit http://127.0.0.1:8000. The core story runs entirely in the browser, including when opened as a file. Online maps and optional Google Fonts need internet. If the map cannot load, skip navigation and play the full chapter.
+Visit http://127.0.0.1:8000. The core story runs entirely in the browser, including when opened as a file. Online maps and optional Google Fonts need internet. If the map cannot load, reconnect or enter coordinates to place your city guess.
 
 ## This chapter
 
 Allow roughly 20–30 minutes for discussion, or move quickly for a prototype test:
 
-1. Find the city with a short map warm-up (skippable).
+1. Start with the full five-clue map mystery: place a shared city pin, see your distance and navigation score, then begin the posting.
 2. Read the opening brief and three source documents.
 3. Handle a diplomatic reception with three approaches.
 4. Pursue two of four investigative leads. Earlier choices change your access.

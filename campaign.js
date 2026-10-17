@@ -3,12 +3,14 @@ const $ = id => document.getElementById(id);
 const D = window.CampaignData, E = window.CampaignEngine;
 const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const storageKey = new URLSearchParams(location.search).has('playtest') ? 'embassy-campaign-v2-playtest' : 'embassy-campaign-v2';
-const stages = ['welcome','arrival','briefing','reception','investigation','assessment','memo','response','followup','ending','residence','complete','consequence'];
-let state = E.fresh(), deskTab = 'evidence', map = null;
+const stages = ['welcome','arrival','arrival-result','briefing','reception','investigation','assessment','memo','response','followup','ending','residence','complete','consequence'];
+let state = E.fresh(), deskTab = 'evidence', map = null, navigationView = null;
 try {
   const restored = JSON.parse(localStorage.getItem(storageKey));
   if (restored && restored.version === 2 && stages.includes(restored.stage) && restored.meters && restored.draft && Array.isArray(restored.history) && Array.isArray(restored.evidence) && restored.evidence.every(id=>D.evidence[id]) && ['president','host','allies','tension'].every(key=>Number.isFinite(restored.meters[key]) && restored.meters[key]>=0 && restored.meters[key]<=100)) state = restored;
 } catch { /* An unavailable browser store does not block play. */ }
+// Old saves that have not started their posting now open on the map as well.
+if (state.stage==='welcome' && !state.arrival) state.stage='arrival';
 function save() {
   try { localStorage.setItem(storageKey,JSON.stringify(state)); $('autosave').textContent = '✓ Saved in this browser · Resume whenever you like'; }
   catch { $('autosave').textContent = 'Storage unavailable · Keep this tab open; use Download at the end.'; }
@@ -44,7 +46,7 @@ function renderDesk() {
   }
 }
 function renderProgress() {
-  const groups = [['Arrival',['welcome','arrival']],['Briefing',['briefing']],['Reception',['reception']],['Investigate',['investigation','assessment']],['The cable',['memo','response']],['Aftermath',['followup','ending','residence','complete']]];
+  const groups = [['Find the city',['arrival','arrival-result']],['Briefing',['welcome','briefing']],['Reception',['reception']],['Investigate',['investigation','assessment']],['The cable',['memo','response']],['Aftermath',['followup','ending','residence','complete']]];
   const current = state.stage==='consequence' ? state.pending : state.stage;
   const index = groups.findIndex(([,items])=>items.includes(current));
   $('chapter-progress').innerHTML = groups.map(([label],i)=>`<span class="${i===index?'active':i<index?'done':''}" ${i===index?'aria-current="step"':''}>${String(i+1).padStart(2,'0')} ${label}</span>`).join('');
@@ -59,17 +61,17 @@ const assessmentClaims = {
   translation:'The intercepted message concerns radio valves, not prisoners.'
 };
 function render() {
-  if (map) { map.remove(); map = null; }
+  if (map) { navigationView={center:map.getCenter(),zoom:map.getZoom()}; map.remove(); map = null; }
+  const navigating=['arrival','arrival-result'].includes(state.stage);
+  document.querySelector('.campaign-layout').classList.toggle('mapping',navigating);
+  document.querySelector('.desk-sidebar').hidden=navigating;
   renderMeters(); renderDesk(); renderProgress();
   const scene = $('scene'); scene.tabIndex = -1; scene.setAttribute('aria-label','Current scene');
   switch(state.stage) {
     case 'welcome':
-      scene.innerHTML = heading('CHAPTER ONE / THE MISSING RESEARCHERS','A quiet capital.<br>A very loud telephone.') + '<span class="story-kicker">EYES ONLY / TWO PAIRS</span><p class="lead">You have barely unpacked at the residence when two Americans are detained. A reception starts in an hour. Washington wants answers before morning.</p><p>You are an ambassador couple working as a diplomatic team. Read the room, test the intelligence, and decide what the president hears.</p><div class="roles"><div><strong>One of you: Ambassador</strong><p>Ask what each decision does to your relationships and your room to negotiate.</p></div><div><strong>The other: Political counsellor</strong><p>Ask what the evidence supports, what is missing, and who benefits from each account.</p></div></div><p class="small">Choose roles aloud, swap whenever you like. One person clicks and types for both. No private choices or timers. Allow about 20–30 minutes, or move quickly for a test.</p><div class="scene-actions">'+button('Open our posting →','arrive')+'</div>';
+      scene.innerHTML = heading('CHAPTER ONE / THE MISSING RESEARCHERS','A quiet capital.<br>A very loud telephone.') + '<span class="story-kicker">EYES ONLY / TWO PAIRS</span><p class="lead">You have barely unpacked at the residence when two Americans are detained. A reception starts in an hour. Washington wants answers before morning.</p><p>You are an ambassador couple working as a diplomatic team. Read the room, test the intelligence, and decide what the president hears.</p><div class="roles"><div><strong>One of you: Ambassador</strong><p>Ask what each decision does to your relationships and your room to negotiate.</p></div><div><strong>The other: Political counsellor</strong><p>Ask what the evidence supports, what is missing, and who benefits from each account.</p></div></div><p class="small">Choose roles aloud, swap whenever you like. One person clicks and types for both. No private choices or timers. Allow about 20–30 minutes, or move quickly for a test.</p><div class="scene-actions">'+button('Open the diplomatic bag →','briefing')+'</div>';
       break;
-    case 'arrival':
-      scene.innerHTML = heading('17:00 / THE DESTINATION','First, find your posting.') + '<p>A short navigation warm-up. Use the clues to place a pin on the city, or skip straight to the story.</p>' + D.clues.slice(0,state.clue).map((clue,i)=>`<p class="nav-hint"><span class="eyebrow">CLUE ${i+1}</span><br>${esc(clue)}</p>`).join('') + (state.clue<3?button('Another clue','clue',true):'') + '<div id="map" class="arrival-map" aria-label="Map: click to choose the city"></div><p id="pin-status" class="small" role="status">'+(state.pin?'A pin is placed. Move it until you both agree.':'Click to place your shared pin. Zoom in for detail.')+'</p><div class="scene-actions">'+button('Lock our pin & arrive →','lock-arrival')+button('Skip navigation','skip-arrival',true)+'</div>';
-      initializeMap();
-      break;
+    case 'arrival': case 'arrival-result': renderArrival(); break;
     case 'briefing':
       scene.innerHTML = heading('18:00 / VIENNA, AUSTRIA','The diplomatic bag.') + (state.arrival?`<p class="small">${esc(state.arrival)}</p>`:'') + '<p class="lead">A neutral country. A city where East and West both want to be heard. Tonight, everyone seems to be speaking at once.</p>' + telegram('CABLE / FROM THE PRESIDENT · FICTIONAL','“Protect our citizens. Find out whether this is an ordinary arrest or something larger. I want a recommendation, not a stack of rumours. I also expect our allies to see that we mean business.”') + '<p>Two American acoustics researchers were detained this afternoon. The ministry alleges they photographed a restricted installation. An allied intercept hints at a transfer before morning.</p><p><strong>Your objectives:</strong> establish the facts, secure consular access, and prevent an avoidable confrontation. Keeping every relationship happy may be impossible.</p><p>Open the three evidence cards on your desk. Then decide how to handle the reception.</p><div class="scene-actions">'+button('Go to the reception →','reception')+'</div>';
       break;
@@ -115,16 +117,36 @@ function renderEnding() {
 function renderResidence() {
   $('scene').innerHTML = heading('07:30 / JUST THE TWO OF YOU','Coffee before the city wakes.') + '<p class="lead">The residence is finally quiet. You find two cups, loosen the formal clothes, and sit down together.</p><div class="residence-prompt"><p>What did your partner notice tonight that you missed?</p></div><div class="residence-prompt"><p>Which decision would you make differently if the other person were ambassador?</p></div><p>Answer aloud. No points and no hidden choices.</p><div class="form-section"><label for="residence-ritual">A small ritual for our life at the residence · optional</label><input id="residence-ritual" data-residence="ritual" maxlength="250" placeholder="Coffee on the balcony before opening the cables…" value="'+esc(state.residence.ritual)+'"></div><div class="form-section"><label for="residence-note">One thing to remember from tonight · optional</label><textarea id="residence-note" data-residence="note" maxlength="1500" placeholder="A thought, a disagreement, or a little plan…">'+esc(state.residence.note)+'</textarea></div><div class="scene-actions">'+button('Seal our chapter ♡','complete')+'</div><p class="small">Saved only in this browser. Download a copy on the next screen.</p>';
 }
+function renderArrival() {
+  const revealed=state.stage==='arrival-result';
+  const clues=D.clues.slice(0,state.clue).map((clue,i)=>`<article class="clue"><p class="eyebrow">CLUE ${i+1} / 5</p><p>${esc(clue)}</p></article>`).join('');
+  const result=state.navigation;
+  const left=revealed ? heading('POSTING CONFIRMED',`${D.city.name}, ${D.city.country}.`)+`<p class="lead">The destination is found. Now your posting begins.</p><div class="navigation-score"><p class="metric">${Math.round(result.km).toLocaleString()} km<small>from the city centre</small></p><p class="metric">${result.total} / 120<small>${result.accuracy} accuracy + ${result.bonus} early-solve bonus</small></p></div><p class="small">Solved with ${result.clues} of 5 clues. Your navigation score is separate from the diplomatic relationship meters.</p><details><summary>Read all five clues</summary>${D.clues.map((clue,i)=>`<p class="small">${i+1}. ${esc(clue)}</p>`).join('')}</details><div class="scene-actions">${button('Begin our posting →','welcome')}</div>` : heading('FIRST, THE MAP / AUTUMN 1983','Where are we posted?')+'<p>Someone spilled tea over the destination. Open the clues, talk it through, and pin the <strong>city centre</strong>. Your diplomatic quest starts when you arrive.</p>'+clues+`<div class="scene-actions">${state.clue<D.clues.length?button('Open next clue','clue',true):'<p class="small">All five clues opened. Where will you put your pin?</p>'}</div><p class="small">${state.clue} of 5 clues · ${(5-state.clue)*5} early-solve bonus points available · No timer</p>`;
+  $('scene').innerHTML=`<div class="arrival-layout"><div>${left}</div><div class="navigation-map"><p class="eyebrow">${revealed?'YOUR GUESS & YOUR DESTINATION':'A WORLD OF POSSIBILITIES'}</p><div id="map" class="arrival-map" aria-label="Map: click to choose the city"></div><p id="pin-status" class="small" role="status">${revealed?'Green is your guess. Peach is the city centre.':state.pin?'Your pin is placed. Move it until you both agree.':'Tap the map to place your pin. Zoom in to find the city.'}</p>${revealed?'':`<details><summary>Place a pin using coordinates</summary><form id="navigation-coordinates"><label>Latitude<input id="navigation-lat" type="number" min="-85" max="85" step="any" required value="${state.pin?state.pin.lat.toFixed(4):''}"></label><label>Longitude<input id="navigation-lng" type="number" min="-180" max="180" step="any" required value="${state.pin?state.pin.lng.toFixed(4):''}"></label><button class="secondary" type="submit">Place pin</button></form></details><div class="scene-actions">${button('Agree & lock our pin →','lock-arrival')}</div><p class="small">One shared guess. You can open more clues before locking.</p>`}</div></div>`;
+  initializeMap();
+}
+let navigationMarker=null;
+function placeNavigationPin(lat,lng) {
+  if (state.stage!=='arrival' || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat)>85 || Math.abs(lng)>180)return;
+  state.pin={lat,lng};
+  if(map){if(navigationMarker)map.removeLayer(navigationMarker);navigationMarker=L.circleMarker([lat,lng],{radius:7,color:'#263e35',fillColor:'#263e35',fillOpacity:1}).addTo(map);}
+  $('pin-status').textContent='Our pin is placed. Move it until you both agree, then lock it.';
+  $('navigation-lat').value=lat.toFixed(4);$('navigation-lng').value=lng.toFixed(4);save();
+}
 function initializeMap() {
-  if (!window.L) { $('map').innerHTML='<p style="padding:20px">The online map is unavailable. You can skip navigation and play the full story.</p>'; return; }
-  map = L.map('map',{minZoom:2,maxZoom:11,worldCopyJump:true}).setView([42,10],3);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — Esri, Maxar, Earthstar Geographics, GIS User Community',maxZoom:11}).addTo(map).on('tileerror',()=>{$('pin-status').textContent='Some tiles could not load. You can skip navigation and play the story.';});
-  let marker;
-  const mark = () => {if(marker) map.removeLayer(marker); marker=L.circleMarker([state.pin.lat,state.pin.lng],{radius:7,color:'#263e35',fillColor:'#e4a779',fillOpacity:1}).addTo(map);};
-  if (state.pin) mark();
-  map.on('click',event=>{state.pin={lat:event.latlng.lat,lng:((event.latlng.lng+180)%360+360)%360-180};mark();$('pin-status').textContent='Our pin is placed. Move it until you both agree, then lock it.';save();});
+  if (!window.L) { $('map').innerHTML='<p style="padding:20px">The online map could not load. Reconnect and refresh, or place a pin using coordinates below.</p>'; return; }
+  map = L.map('map',{minZoom:2,maxZoom:11,worldCopyJump:true}).setView(navigationView?navigationView.center:[30,0],navigationView?navigationView.zoom:2);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — Esri, Maxar, Earthstar Geographics, GIS User Community',maxZoom:11}).addTo(map).on('tileerror',()=>{$('pin-status').textContent='Some tiles could not load. Reconnect, or place your pin using coordinates below.';});
+  navigationMarker=null;
+  if(state.pin)navigationMarker=L.circleMarker([state.pin.lat,state.pin.lng],{radius:7,color:'#263e35',fillColor:'#263e35',fillOpacity:1}).addTo(map);
+  if(state.stage==='arrival-result') {
+    L.circleMarker([D.city.lat,D.city.lng],{radius:9,color:'#9d5d35',fillColor:'#e4a779',fillOpacity:1}).addTo(map).bindTooltip(D.city.name,{permanent:true,direction:'top'});
+    const route=L.polyline([[state.pin.lat,state.pin.lng],[D.city.lat,D.city.lng]],{color:'#9d5d35',dashArray:'5 8',weight:2}).addTo(map);
+    map.fitBounds(route.getBounds(),{padding:[35,35],maxZoom:8});
+  } else map.on('click',event=>placeNavigationPin(event.latlng.lat,((event.latlng.lng+180)%360+360)%360-180));
 }
 function bindScene() {
+  if($('navigation-coordinates'))$('navigation-coordinates').onsubmit=event=>{event.preventDefault();placeNavigationPin(Number($('navigation-lat').value),Number($('navigation-lng').value));};
   $('scene').querySelectorAll('[data-action]').forEach(el=>el.onclick=()=>handleAction(el.dataset.action));
   $('scene').querySelectorAll('[data-reception]').forEach(el=>el.onclick=()=>{if(state.stage!=='reception')return; E.choose(state,D.reception.find(x=>x.id===el.dataset.reception),'investigation');go('consequence');});
   $('scene').querySelectorAll('[data-lead]').forEach(el=>el.onclick=()=>{if(E.investigate(state,el.dataset.lead,D))go('consequence');});
@@ -142,15 +164,11 @@ function bindScene() {
 }
 function handleAction(action) {
   if (action==='arrive') return go('arrival');
-  if (action==='clue') {state.clue=Math.min(3,state.clue+1);save();return render();}
+  if (action==='clue') {state.clue=Math.min(D.clues.length,state.clue+1);save();return render();}
   if (action==='lock-arrival') {
-    if (!state.pin) { $('pin-status').textContent='Place a pin first, or use Skip navigation.'; return; }
-    const r=x=>x*Math.PI/180;
-    const a=Math.sin(r(D.city.lat-state.pin.lat)/2)**2+Math.cos(r(state.pin.lat))*Math.cos(r(D.city.lat))*Math.sin(r(D.city.lng-state.pin.lng)/2)**2;
-    state.arrival=`Your pin was ${Math.round(6371*2*Math.asin(Math.sqrt(Math.min(1,a))))} km from Vienna. Navigation does not affect diplomatic relationships.`;
-    return go('briefing');
+    if (!E.finishNavigation(state,D)) { $('pin-status').textContent='Place a city guess on the map first, then agree and lock your pin.'; return; }
+    return go('arrival-result');
   }
-  if (action==='skip-arrival') {state.arrival='Navigation skipped. Your posting is Vienna, Austria.';return go('briefing');}
   if (action==='continue') {const next=state.pending;state.pending=null;return go(next);}
   if (action==='memo' && state.evidence.some(id=>!state.classifications[id])) { $('validation').textContent='Choose an assessment for each claim before drafting.'; return; }
   if (action==='send') {
@@ -160,7 +178,7 @@ function handleAction(action) {
   }
   if (action==='download') return download();
   if (action==='debrief') return go('ending');
-  if (['reception','assessment','memo','followup','residence','complete'].includes(action)) return go(action);
+  if (['welcome','briefing','reception','assessment','memo','followup','residence','complete'].includes(action)) return go(action);
 }
 function download() {
   const report={title:'Embassy for Two — The Night Cable',savedAt:new Date().toISOString(),setting:'Fictional crisis in Vienna, 1983',...state};
@@ -169,5 +187,5 @@ function download() {
 }
 $('evidence-tab').onclick=()=>{deskTab='evidence';renderDesk();};
 $('journal-tab').onclick=()=>{deskTab='journal';renderDesk();};
-$('restart').onclick=()=>{if(state.stage==='welcome'||confirm('Start a fresh posting? This replaces your saved chapter in this browser. Download a finished chapter first if you want to keep it.')){state=E.fresh();save();render();}};
+$('restart').onclick=()=>{if((state.stage==='arrival'&&!state.pin&&state.clue===1)||confirm('Start a fresh posting? This replaces your saved chapter in this browser. Download a finished chapter first if you want to keep it.')){state=E.fresh();navigationView=null;save();render();}};
 render();

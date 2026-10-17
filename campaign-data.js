@@ -4,6 +4,8 @@
     city: {name:'Vienna',country:'Austria',lat:48.2082,lng:16.3738},
     clues: [
       'Your host country adopted permanent neutrality in 1955, after a decade of Allied occupation.',
+      'Look for a city on the Danube, in the eastern part of its country.',
+      'This former imperial capital is known for classical music and a grand boulevard called the Ringstrasse.',
       'The International Atomic Energy Agency established its headquarters in this city in 1957.',
       'Your destination is the capital of Austria.'
     ],
@@ -38,6 +40,7 @@
       {id:'escalate',title:'Ask Washington for a military signal',text:'Recommend an alert by U.S. forces outside Austria to demonstrate resolve. Your president must decide whether to act.',effects:{president:3,host:-18,allies:-12,tension:25},reply:'Washington considers the request. Your ally warns that a military signal could turn a detention dispute into a wider confrontation. The vehicle report is still unconfirmed.'}
     ],
     sources: [
+      ['The city’s geography and musical history · UNESCO','https://whc.unesco.org/en/list/1033'],
       ['Austria’s State Treaty and neutrality · U.S. Office of the Historian','https://history.state.gov/historicaldocuments/frus1955-57v05/d76'],
       ['1955: The Austrian State Treaty · House of Austrian History','https://hdgoe.at/state_treaty'],
       ['IAEA milestones · International Atomic Energy Agency','https://www.iaea.org/sites/default/files/iaeamilestones.pdf']

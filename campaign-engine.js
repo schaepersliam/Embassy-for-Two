@@ -1,7 +1,19 @@
 (function(root) {
   'use strict';
   const labels = {president:'Presidential confidence',host:'Host-country trust',allies:'Allied confidence',tension:'Escalation'};
-  const fresh = () => ({version:2,stage:'welcome',pending:null,clue:1,pin:null,arrival:null,meters:{president:60,host:55,allies:55,tension:35},flags:{},evidence:['detention','ministry','intercept'],leads:[],classifications:{},history:[],draft:{facts:'',uncertainty:'',reason:'',policy:'',attribution:''},review:null,feedback:null,residence:{note:'',ritual:''}});
+  const fresh = () => ({version:2,stage:'arrival',pending:null,clue:1,pin:null,arrival:null,navigation:null,meters:{president:60,host:55,allies:55,tension:35},flags:{},evidence:['detention','ministry','intercept'],leads:[],classifications:{},history:[],draft:{facts:'',uncertainty:'',reason:'',policy:'',attribution:''},review:null,feedback:null,residence:{note:'',ritual:''}});
+  function finishNavigation(state,data) {
+    if (state.stage!=='arrival' || !state.pin || !Number.isFinite(state.pin.lat) || !Number.isFinite(state.pin.lng) || Math.abs(state.pin.lat)>85 || Math.abs(state.pin.lng)>180) return false;
+    const radians=x=>x*Math.PI/180;
+    const h=Math.sin(radians(data.city.lat-state.pin.lat)/2)**2+Math.cos(radians(state.pin.lat))*Math.cos(radians(data.city.lat))*Math.sin(radians(data.city.lng-state.pin.lng)/2)**2;
+    const km=6371*2*Math.asin(Math.sqrt(Math.min(1,h)));
+    const accuracy=Math.round(100*Math.exp(-km/500));
+    const bonus=(data.clues.length-state.clue)*5;
+    state.navigation={km,accuracy,bonus,total:accuracy+bonus,clues:state.clue};
+    state.arrival=`Your pin was ${Math.round(km)} km from ${data.city.name}. Navigation score: ${accuracy+bonus} / 120.`;
+    state.stage='arrival-result';
+    return true;
+  }
   const clamp = value => Math.min(100,Math.max(0,value));
   function effects(state, changes) {
     const actual = {};
@@ -60,6 +72,6 @@
     if (military) return {kind:'mixed',title:'The president holds the line.',release:false,text:'The president declines a military alert on the available evidence. Consular access is arranged, but release remains unresolved. Washington requests a fresh assessment before considering further action.',lesson:'Your recommendation met a presidential limit. Political confidence and escalation both shaped the response; they did not replace evidence.'};
     return {kind:'mixed',title:'Access, but no resolution yet.',release:false,text:'An embassy officer is admitted to see the researchers. Both are unharmed. Their release remains under negotiation, and the ministry insists on a formal permit review. Your approach has bought movement, with diplomatic work still to do.',lesson:'You secured access, but strained relationships or public pressure limited the space for an immediate agreement.'};
   }
-  root.CampaignEngine = {fresh,effects,choose,investigate,evidenceFor,reviewBrief,outcome,labels};
+  root.CampaignEngine = {fresh,finishNavigation,effects,choose,investigate,evidenceFor,reviewBrief,outcome,labels};
   if (typeof module !== 'undefined') module.exports = root.CampaignEngine;
 })(typeof window !== 'undefined' ? window : globalThis);

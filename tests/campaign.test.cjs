@@ -16,6 +16,16 @@ function play(reception,leads,policy,final,accurate=true) {
   E.choose(s,D.followups.find(x=>x.id===final),'ending'); continueStory(s);
   return s;
 }
+test('map is the first round and a pin is required before the quest',()=>{
+  const s=E.fresh();
+  assert.equal(s.stage,'arrival');assert.equal(D.clues.length,5);
+  assert.equal(E.finishNavigation(s,D),false);assert.equal(s.stage,'arrival');
+  const meters={...s.meters};s.pin={lat:D.city.lat,lng:D.city.lng};
+  assert.ok(E.finishNavigation(s,D));assert.equal(s.stage,'arrival-result');
+  assert.equal(s.navigation.km,0);assert.equal(s.navigation.total,120);
+  assert.deepEqual(s.meters,meters);
+  assert.equal(E.finishNavigation(s,D),false);
+});
 test('access depends on reception choice, and evidence changes with it',()=>{
   const privatePath=play('private',['police','translation'],'quiet','verify');
   const publicPath=play('public',['police','translation'],'quiet','verify');
