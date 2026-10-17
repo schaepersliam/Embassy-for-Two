@@ -18,17 +18,8 @@ function generate(seed,data,history=[]){
  const second=shuffle(eligible.length?eligible:ids.filter(id=>id!==host&&id!==first&&(tradeMode!=='markets'||data.countries.find(c=>c.id===id).markets)),random)[0];
  const trade=[first,second];
  const optionIds=target=>shuffle([target,...shuffle(ids.filter(id=>id!==target),random).slice(0,5)],random);
- const lastRules=history.slice(-1).flatMap(h=>h.ruleIds||[]);
- const valid=data.rules.filter(rule=>data.countries.filter(rule.test).length>=3&&data.countries.filter(c=>!rule.test(c)).length>=3);
- const fresh=valid.filter(rule=>!lastRules.includes(rule.id));
- const picked=shuffle(fresh.length>=2?fresh:valid,random).slice(0,2);
- const political=picked.map(rule=>{
-  const yes=shuffle(data.countries.filter(rule.test),random).slice(0,3).map(c=>c.id);
-  const no=shuffle(data.countries.filter(c=>!rule.test(c)),random).slice(0,3).map(c=>c.id);
-  return makeRound('connections',{ruleId:rule.id,answers:yes,options:shuffle([...yes,...no],random)});
- });
  const hidden=makeHidden(seed,data,history,random);
- return{version:3,features:3,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1],tradeMode),political[1]],postcard:'',recipeSaved:false,completedAt:null};
+ return{version:3,features:4,seed:seed>>>0,hostId:host,index:0,phase:'play',favours:{host:45,allies:45,president:45},rounds:[makeRound('map',{target:host}),makeRound('exports',{target:trade[0],answer:trade[0],options:optionIds(trade[0])}),hidden,makePickFive(trade[1],tradeMode),makeCourier(seed,data,history,random)],postcard:'',recipeSaved:false,completedAt:null};
 }
 function makePickFive(target,mode='markets'){return makeRound('partner',{target,mode,options:[],picks:[],hits:[]});}
 function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
@@ -39,11 +30,18 @@ function makeHidden(seed,data,history=[],random=rng(seed^0xABCDEF)){
  const no=data.countries.filter(c=>theme.fixed?!answers.includes(c.id):!theme.test(c));
  return makeRound('hidden',{themeId:theme.id,linkClues:0,answers,options:shuffle([...answers,...shuffle(no,random).slice(0,3).map(c=>c.id)],random)});
 }
+function makeCourier(seed,data,history=[],random=rng(seed^0xC0FFEE)){
+ const recent=history.slice(-3).map(h=>h.courierId);const pool=data.courierMissions.filter(m=>!recent.includes(m.id));const mission=shuffle(pool.length?pool:data.courierMissions,random)[0];return makeRound('courier',{missionId:mission.id,route:[mission.start],options:[]});
+}
 function upgrade(s,data){
- if(s.features>=2){s.rounds[3].mode=s.rounds[3].mode||'markets';s.features=3;return s;}
- if(!s.rounds[2].solved)s.rounds[2]=makeHidden(s.seed,data);
- if(!s.rounds[3].solved){const old=s.rounds[3].target;const target=data.countries.find(c=>c.id===old&&c.markets)||data.countries.find(c=>c.markets&&c.id!==s.hostId&&c.id!==s.rounds[1].target);s.rounds[3]=makePickFive(target.id);}
- s.features=3;s.recipeSaved=s.recipeSaved||false;return s;
+ if(s.features<2||!s.features){
+  if(!s.rounds[2].solved)s.rounds[2]=makeHidden(s.seed,data);
+  if(!s.rounds[3].solved){const old=s.rounds[3].target;const target=data.countries.find(c=>c.id===old&&c.markets)||data.countries.find(c=>c.markets&&c.id!==s.hostId&&c.id!==s.rounds[1].target);s.rounds[3]=makePickFive(target.id);}
+ }
+ s.rounds[3].mode=s.rounds[3].mode||'markets';
+ for(const key of ['picks','hits','confirmed'])if(s.rounds[3][key])s.rounds[3][key]=s.rounds[3][key].map(value=>String(value).replace(/\bPetrol\b/g,'Gasoline').replace(/\bpetrol\b/g,'gasoline').replace(/\baluminium\b/g,'aluminum').replace(/\btyres\b/g,'tires').replace(/\bflavouring\b/g,'flavoring'));
+ if(s.features!==4&&!s.rounds[4].solved)s.rounds[4]=makeCourier(s.seed,data);
+ s.features=4;s.recipeSaved=s.recipeSaved||false;return s;
 }
 function current(s){return s.rounds[s.index];}
 function distance(a,b){const r=n=>n*Math.PI/180;const h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 6371*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));}
@@ -88,7 +86,7 @@ function checkSet(s){
 function addPick(s,text,data){
  const r=current(s);if(s.phase!=='play'||r.kind!=='partner'||!Array.isArray(r.picks))return false;
  const goods=r.mode&&r.mode!=='markets',name=goods?data.normalizeGood(text):data.normalizeCountry(text);
- if(!name){r.message=goods?'Choose a product from the suggestions, or enter its six-digit HS code.':'Choose a recognised country from the search suggestions.';return false;}
+ if(!name){r.message=goods?'Choose a product from the suggestions, or enter its six-digit HS code.':'Choose a recognized country from the search suggestions.';return false;}
  if(!goods&&name===data.countries.find(c=>c.id===r.target).name){r.message='An export destination must be another country.';return false;}
  if(r.picks.includes(name)){r.message='That answer is already on your list.';return false;}
  if(r.picks.length>=5){r.message='Your five picks are ready. Remove one to change it.';return false;}
@@ -99,6 +97,26 @@ function lockPicks(s,data){
  const names=data.pickFiveRows(r).map(m=>m[0]);
  r.hits=r.picks.filter(name=>names.includes(name));return settle(s,r,r.hits.length*20);
 }
+function courierMiss(r,signature,message){
+ if(!r.submitted.includes(signature)){r.submitted.push(signature);r.tries++;r.message=message+' That costs 15 points.';}else r.message=message+' You already tried this; no extra penalty.';return false;
+}
+function routeStep(s,id,data){
+ const r=current(s);if(s.phase!=='play'||r.kind!=='courier'||!data.courierCountry(id))return false;const m=data.courierMissions.find(m=>m.id===r.missionId),last=r.route.at(-1),sig=r.route.join(',')+'>'+id;
+ if(id===m.blocked)return courierMiss(r,sig,'The courier cannot enter that country in this scenario.');
+ if(r.route.includes(id)){r.message='That country is already in your route. Undo a stop to backtrack.';return false;}
+ if(!data.courierCountry(last).neighbors.includes(id))return courierMiss(r,sig,'Those countries do not share a land border on this board.');
+ if(r.route.length-1>=m.budget){r.message='The crossing budget is full. Undo a stop, or reset the route.';return false;}
+ r.route.push(id);r.message=id===m.end?'At the destination. Check your required stop, then deliver the pouch.':'';return true;
+}
+function undoRoute(s,data,reset=false){const r=current(s);if(s.phase!=='play'||r.kind!=='courier')return false;if(reset)r.route=[data.courierMissions.find(m=>m.id===r.missionId).start];else if(r.route.length>1)r.route.pop();r.message='Route updated. Your previous penalties still apply.';return true;}
+function checkRoute(s,data){
+ const r=current(s);if(s.phase!=='play'||r.kind!=='courier')return false;const m=data.courierMissions.find(m=>m.id===r.missionId);
+ if(!data.courierPathValid(m,r.route)){r.message='That route does not satisfy the board rules. Reset the route to try again.';return false;}
+ if(r.route.at(-1)!==m.end){r.message='Reach the destination before sending the pouch.';return false;}
+ if(!r.route.includes(m.via))return courierMiss(r,'deliver:'+r.route.join(','),'You skipped the required pickup.');
+ if(r.route.length-1>m.budget)return false;
+ return settle(s,r,score(r));
+}
 function useFavour(s,kind,data){
  const r=current(s);const cost=kind==='president'?20:15;
  if(s.phase!=='play'||r.kind==='map'||r.favours[kind]||s.favours[kind]<cost)return false;
@@ -106,7 +124,8 @@ function useFavour(s,kind,data){
  if(!['host','allies','president'].includes(kind))return false;
  if(kind==='host'&&r.kind==='hidden'&&r.linkClues>=3)return false;
  if(kind==='host'&&r.kind==='hidden')r.linkClues=Math.min(3,r.linkClues+1);
- if(kind==='allies'){
+ if(r.kind==='courier'&&kind==='allies'){const m=data.courierMissions.find(m=>m.id===r.missionId),path=data.courierSolution(m,r.route);if(!path||path.length===r.route.length){r.message=path?'You are already at the destination. Deliver the pouch.':'This route cannot finish within budget. Undo a stop, then ask again.';return false;}r.suggested=path[r.route.length];}
+ if(kind==='allies'&&r.kind!=='courier'){
   if(r.kind==='partner'){
    if(r.picks.length>=5)return false;
    const name=data.pickFiveRows(r).map(m=>m[0]).find(name=>!r.picks.includes(name));
@@ -120,16 +139,16 @@ function useFavour(s,kind,data){
   }
  }
  r.favours[kind]=true;s.favours[kind]-=cost;
- r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='partner'?'Your ally suggested one of the true top five.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
+ r.message=kind==='president'?'Washington gives you a second chance: one wrong attempt will not cost points.':kind==='allies'?(r.kind==='courier'?'Your ally marked a next stop that keeps a valid route open.':r.kind==='partner'?'Your ally suggested one of the true top five.':'Your ally has marked one useful card.'):'A local tip is now open below the puzzle.';
  return true;
 }
 function reveal(s){const r=current(s);if(s.phase!=='play'||r.kind==='map')return false;return settle(s,r,0,true);}
 function advance(s){if(s.phase!=='result')return false;if(s.index===s.rounds.length-1){s.phase='summit';s.completedAt=s.completedAt||new Date().toISOString();}else{s.index++;s.phase='play';}return true;}
-function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,activityId:s.activityId??null,tradeMode:s.rounds[3].mode||'markets',roundScores:s.rounds.map(r=>r.points),recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
+function historyEntry(s){return{seed:s.seed,hostId:s.hostId,tradeIds:s.rounds.filter(r=>r.kind==='exports'||r.kind==='partner').map(r=>r.target),ruleIds:s.rounds.filter(r=>['connections','hidden'].includes(r.kind)).map(r=>r.ruleId||r.themeId),points:s.rounds.reduce((n,r)=>n+r.points,0),assisted:s.rounds.filter(r=>r.assisted).length,completedAt:s.completedAt,postcard:s.postcard,activityId:s.activityId??null,courierId:s.rounds[4].missionId||null,tradeMode:s.rounds[3].mode||'markets',roundScores:s.rounds.map(r=>r.points),recipeSaved:!!s.recipeSaved,travelSaved:!!s.travelSaved};}
 function validate(s,data){
  if(!s||s.version!==3||!Number.isInteger(s.seed)||!data.countries.some(c=>c.id===s.hostId)||!['play','result','summit'].includes(s.phase)||!Number.isInteger(s.index)||s.index<0||s.index>4||!Array.isArray(s.rounds)||s.rounds.length!==5||!s.favours)return false;
  if(!['host','allies','president'].every(k=>Number.isFinite(s.favours[k])&&s.favours[k]>=0&&s.favours[k]<=100))return false;
- return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
+ return s.rounds.every(r=>r&&['map','exports','partner','connections','hidden','courier'].includes(r.kind)&&Array.isArray(r.selected)&&Array.isArray(r.wrong)&&Array.isArray(r.eliminated)&&Array.isArray(r.confirmed)&&Array.isArray(r.submitted)&&r.favours&&Number.isInteger(r.tries)&&r.tries>=0&&Number.isInteger(r.clues)&&r.clues>=1&&r.clues<=5&&(r.kind==='courier'?data.courierMissions.some(m=>m.id===r.missionId&&data.courierPathValid(m,r.route)):r.kind==='hidden'?data.themes.some(t=>t.id===r.themeId)&&Array.isArray(r.answers)&&r.answers.length===3:r.kind==='connections'?data.rules.some(rule=>rule.id===r.ruleId)&&Array.isArray(r.answers)&&r.answers.length===3:Array.isArray(r.options)||r.kind==='map'));
 }
-const api={mapScore,resetSelection,generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
+const api={routeStep,undoRoute,checkRoute,mapScore,resetSelection,generate,upgrade,current,distance,lockMap,answer,select,checkSet,addPick,lockPicks,useFavour,reveal,advance,historyEntry,validate};root.CircuitEngine=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
