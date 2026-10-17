@@ -1,17 +1,15 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#263e35">
-<title>Embassy for Two · The Night Cable</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="campaign.css">
-<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script defer src="campaign-data.js"></script><script defer src="campaign-engine.js"></script><script defer src="campaign.js"></script>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#263e35"><title>Embassy for Two · The Diplomatic Circuit</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="circuit.css">
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script defer src="circuit-data.js"></script><script defer src="circuit-engine.js"></script><script defer src="circuit.js"></script></head>
 <body>
-<header class="masthead"><a href="./" class="brand"><span class="seal" aria-hidden="true">✳</span> EMBASSY <i>for</i> TWO</a><div class="header-actions"><a class="quiet" href="classic.html">Original game ↗</a><button id="restart" class="quiet">New posting</button></div></header>
-<main class="campaign-main">
-<div class="campaign-title"><div><p class="eyebrow">THE LIAM & ADDISON FOREIGN SERVICE / VOLUME II</p><h1>The Night Cable<span>Autumn, 1983 · A Cold War story</span></h1></div><p class="edition">ONE SCREEN. TWO DIPLOMATS.<br>Every decision is a conversation.</p></div>
-<div class="campaign-layout">
-<aside class="desk-sidebar" aria-label="Embassy status"><section class="panel status-panel"><p class="eyebrow">THE TEMPERATURE IN THE ROOM</p><div id="meters"></div><p class="small">Higher trust means stronger relationships. Higher escalation means greater danger.</p></section><section class="panel desk-panel"><p class="eyebrow">YOUR DESK</p><div class="desk-tabs"><button id="evidence-tab" aria-pressed="true">Evidence <span id="evidence-count">0</span></button><button id="journal-tab" aria-pressed="false">Decision log</button></div><div id="desk-content"></div></section><p id="autosave" class="small" role="status">Progress saves in this browser.</p></aside>
-<div class="story-column"><nav id="chapter-progress" aria-label="Chapter progress"></nav><section id="scene" class="panel scene-panel" aria-live="polite" aria-atomic="false"></section><p class="fiction-note">Historical setting. Fictional crisis, characters, president and dialogue. This is a branching story, not a reconstruction of a real incident.</p></div>
-</div><footer>Made for Liam & Addison <span>Across the miles, until June 2028 ♡</span></footer>
+<header class="masthead"><a href="./" class="brand"><span class="seal" aria-hidden="true">✳</span> EMBASSY <i>for</i> TWO</a><div class="header-tools"><button id="passport-toggle" class="quiet" aria-expanded="false" aria-controls="passport">Our passport <span id="passport-count">0</span></button><button id="new-dispatch" class="secondary">New dispatch ↗</button></div></header>
+<main>
+<section class="circuit-intro"><div><p class="eyebrow">THE LIAM & ADDISON FOREIGN SERVICE / VOLUME III</p><h1>The Diplomatic Circuit<span>A little world knowledge. A little time together.</span></h1></div><div class="dispatch-ticket"><span id="dispatch-number">DISPATCH 001</span><small>5 puzzles · no timer<br>One screen. Same team.</small></div></section>
+<section id="passport" class="panel passport" hidden><p class="eyebrow">OUR LITTLE WORLD TOUR</p><h2>Places we’ve figured out together.</h2><div id="passport-list"></div><button id="download-passport" class="secondary">Download passport</button><p class="small">Saved only in this browser. A download keeps a copy; import is not available yet.</p></section>
+<div class="desk-strip"><p id="posting-label">Your destination is still sealed.</p><span id="total-score">0 / 500 points</span><span id="save-status" role="status">Progress saves here.</span></div>
+<nav id="progress" aria-label="Dispatch progress"></nav>
+<div class="play-layout"><section id="puzzle" class="panel puzzle-panel" aria-label="Current puzzle" tabindex="-1"></section><aside class="dispatch-sidebar" aria-label="Your embassy"><section class="panel favour-panel"><p class="eyebrow">A FEW FRIENDS IN THE RIGHT PLACES</p><h2>Diplomatic favours</h2><div id="favour-meters"></div><p class="small">Earn trust by finishing assignments. Spend it on help. Each dispatch starts with fresh favours.</p></section><section class="panel summit-panel"><p class="eyebrow">GET THE SUMMIT TOGETHER</p><div id="summit-seats"></div></section><p class="small sidebar-note">12 host cities · real 2023 trade data<br>New combinations every dispatch.</p></aside></div>
+<footer><span>Made for Liam & Addison ♡</span><details><summary>Sources & earlier versions</summary><p>Fictional summit. Real geography and dated facts. Trade: 2023 WITS / UN Comtrade. Membership snapshot: 16 October 2026. Sources appear with each reveal.</p><a href="night-cable.html">The Cold War story</a> · <a href="classic.html">The original map game</a></details></footer>
 </main></body></html>
